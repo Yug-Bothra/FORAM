@@ -1,745 +1,1074 @@
 // src/pages/messages/OneVOne.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import { useUser } from "@clerk/clerk-react";
-import MessageStatus from "./MessageStatus";
-import Edit from "./Edit";
-import Delete from "./Delete";
-import Copy from "./Copy";
-import Forward from "./Forward";
-
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
-const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
-
-const colors = {
-  primary: "#6C63FF",
-  accent: "#FF6584",
-  bg: "#F9FAFB",
-  textDark: "#111827",
-  textLight: "#6B7280",
-  border: "#E5E7EB",
-  sentMessage: "#6C63FF",
-  receivedMessage: "#FFFFFF",
-  messageHover: "#F0F0F0",
-};
-
-const formatTime = (iso) =>
-  new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-
-const formatDateHeader = (iso) => {
-  const d = new Date(iso);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return "Today";
-  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
-  return d.toLocaleDateString();
-};
+import { uploadToCloudinary } from "../../utils/cloudinary";
 
 export default function OneVOne() {
   const { user } = useUser();
-  const [conversations, setConversations] = useState([]);
-  const [activeChat, setActiveChat] = useState(null);
   const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
+  const [text, setText] = useState("");
+  const [attachments, setAttachments] = useState([]);
   const [replyTo, setReplyTo] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [forwardModal, setForwardModal] = useState({ open: false, message: null });
-  const [searchTerm, setSearchTerm] = useState("");
+  const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
-  const [selectedMessage, setSelectedMessage] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(null);
-  const scrollRef = useRef();
+  const [activeConversation, setActiveConversation] = useState(null);
+  const [people, setPeople] = useState([]);
+  const [forwardModal, setForwardModal] = useState(false);
+  const [forwardMessage, setForwardMessage] = useState(null);
+  const [forwardTargets, setForwardTargets] = useState([]);
+  const [forwardSearch, setForwardSearch] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const [userProfiles, setUserProfiles] = useState({});
+  const listRef = useRef();
+  const fileInputRef = useRef();
 
-  const scrollToBottom = () =>
-    scrollRef.current && (scrollRef.current.scrollTop = scrollRef.current.scrollHeight);
+  // Enhanced forward targets: conversations + users
+  const filteredForwardTargets = [
+    ...forwardTargets.filter(t => 
+      t.type === 'conversation' && 
+      (t.name || "").toLowerCase().includes(forwardSearch.toLowerCase())
+    ),
+    ...forwardTargets.filter(t => 
+      t.type === 'user' && 
+      (t.name || "").toLowerCase().includes(forwardSearch.toLowerCase())
+    )
+  ];
 
-  // ---------- delete conversation ----------
-  const deleteConversation = async (conversationId) => {
-    try {
-      // Delete all messages in the conversation
-      await supabase.from("messages").delete().eq("conversation_id", conversationId);
-      
-      // Delete conversation participants
-      await supabase.from("conversation_participants").delete().eq("conversation_id", conversationId);
-      
-      // Delete the conversation
-      await supabase.from("conversations").delete().eq("id", conversationId);
-      
-      // Update local state
-      setConversations(prev => prev.filter(c => c.id !== conversationId));
-      
-      // If this was the active chat, clear it
-      if (activeChat?.id === conversationId) {
-        setActiveChat(null);
-        setMessages([]);
-      }
-      
-      setShowDeleteModal(null);
-    } catch (error) {
-      console.error("Error deleting conversation:", error);
+  // Fetch user profiles for display names and avatars
+  useEffect(() => {
+    if (messages.length > 0) {
+      fetchUserProfiles();
     }
-  };
+  }, [messages]);
 
-  // ---------- fetch conversations ----------
-  useEffect(() => {
-    if (!user?.id) return;
-    const fetchConversations = async () => {
-      try {
-        const { data: parts } = await supabase
-          .from("conversation_participants")
-          .select("conversation_id")
-          .eq("user_id", user.id);
+  async function fetchUserProfiles() {
+    const userIds = [...new Set(messages.map(m => m.sender_id))];
+    const { data, error } = await supabase
+      .from("forum_users")
+      .select("id, username, profile_photo")
+      .in("id", userIds);
 
-        if (!parts?.length) return setConversations([]);
-        const convoIds = parts.map((p) => p.conversation_id);
-
-        const convos = await Promise.all(
-          convoIds.map(async (cid) => {
-            const { data: conv } = await supabase.from("conversations").select("*").eq("id", cid).single();
-            const { data: participants } = await supabase
-              .from("conversation_participants")
-              .select("user_id, forum_users(id, username, profile_photo)")
-              .eq("conversation_id", cid);
-
-            const otherUser = participants.find((p) => p.user_id !== user.id)?.forum_users || null;
-            const { data: lastMsg } = await supabase
-              .from("messages")
-              .select("*")
-              .eq("conversation_id", cid)
-              .order("created_at", { ascending: false })
-              .limit(1);
-
-            return { ...conv, otherUser, lastMessage: lastMsg?.[0] || null };
-          })
-        );
-
-        convos.sort(
-          (a, b) =>
-            new Date(b.lastMessage?.created_at || 0) -
-            new Date(a.lastMessage?.created_at || 0)
-        );
-        setConversations(convos);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchConversations();
-  }, [user, messages]);
-
-  // ---------- search users ----------
-  useEffect(() => {
-    if (!searchTerm.trim()) return setSearchResults([]);
-    const doSearch = async () => {
-      const { data, error } = await supabase
-        .from("forum_users")
-        .select("id, username, profile_photo")
-        .ilike("username", `%${searchTerm}%`)
-        .limit(10);
-      if (error) console.error(error);
-      else setSearchResults(data);
-    };
-    doSearch();
-  }, [searchTerm]);
-
-  // ---------- fetch messages & subscribe ----------
-  useEffect(() => {
-    if (!activeChat?.id) return setMessages([]);
-    let cancelled = false;
-
-    const fetchMessages = async () => {
-      const { data, error } = await supabase
-        .from("messages")
-        .select("*")
-        .eq("conversation_id", activeChat.id)
-        .order("created_at", { ascending: true });
-      if (!cancelled && !error) setMessages(data || []);
-      setTimeout(scrollToBottom, 50);
-    };
-    fetchMessages();
-
-    const channel = supabase
-      .channel(`messages-${activeChat.id}`)
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${activeChat.id}` },
-        (payload) => {
-          setMessages((prev) => [...prev, payload.new]);
-          setTimeout(scrollToBottom, 50);
-        }
-      )
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
-  }, [activeChat?.id]);
-
-  // ---------- Cloudinary upload ----------
-  const uploadToCloudinary = async (file) => {
-    if (!file) return null;
-    setUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      form.append("upload_preset", UPLOAD_PRESET);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-        method: "POST",
-        body: form,
+    if (!error && data) {
+      const profiles = {};
+      data.forEach(user => {
+        profiles[user.id] = user;
       });
-      const data = await res.json();
-      setUploading(false);
-      return data?.secure_url ? { url: data.secure_url, type: file.type } : null;
-    } catch (err) {
-      setUploading(false);
-      console.error(err);
-      return null;
+      setUserProfiles(profiles);
     }
+  }
+
+  // Get user display info
+  const getUserInfo = (userId) => {
+    const profile = userProfiles[userId];
+    if (profile) {
+      return {
+        name: profile.username,
+        avatar: profile.profile_photo,
+        initials: profile.username ? profile.username.substring(0, 2).toUpperCase() : "U"
+      };
+    }
+    return {
+      name: "Unknown User",
+      avatar: null,
+      initials: "UN"
+    };
   };
 
-  // ---------- send message ----------
-  const sendMessage = async (file = null) => {
-    if (!newMessage.trim() && !file) return;
-    if (!activeChat?.id) return;
-    try {
-      let attachments = null;
-      if (file) {
-        const uploaded = await uploadToCloudinary(file);
-        if (uploaded)
-          attachments = [
-            { type: uploaded.type.startsWith("image") ? "image" : "file", url: uploaded.url },
-          ];
-      }
-
-      const { data, error } = await supabase
-        .from("messages")
-        .insert([{
-          conversation_id: activeChat.id,
-          sender_id: user.id,
-          content: newMessage || null,
-          attachments,
-          reply_to: replyTo?.id || null,
-          forwarded_from: null,
-        }])
-        .select()
-        .single();
-      if (error) throw error;
-
-      setNewMessage("");
-      setReplyTo(null);
-      setMessages((prev) => [...prev, data]);
-      setTimeout(scrollToBottom, 50);
-    } catch (err) {
-      console.error(err);
+  // Generate avatar component
+  const Avatar = ({ userId, size = "w-8 h-8" }) => {
+    const userInfo = getUserInfo(userId);
+    
+    if (userInfo.avatar) {
+      return (
+        <img
+          src={userInfo.avatar}
+          alt={userInfo.name}
+          className={`${size} rounded-full object-cover border-2 border-white shadow-sm`}
+        />
+      );
     }
-  };
-
-  // ---------- message bubble ----------
-  const MessageBubble = ({ m }) => {
-    const mine = m.sender_id === user.id;
-    const replied = m.reply_to ? messages.find((x) => x.id === m.reply_to) : null;
-    const isSelected = selectedMessage?.id === m.id;
     
     return (
-      <div className={`flex ${mine ? "justify-end" : "justify-start"} mb-1`}>
-        <div 
-          className={`relative max-w-[70%] group cursor-pointer transition-all duration-200 ${
-            isSelected ? 'ring-2 ring-purple-400' : ''
-          }`}
-          onClick={() => setSelectedMessage(isSelected ? null : m)}
-        >
-          <div
-            className={`rounded-lg px-3 py-2 shadow-sm ${
-              mine 
-                ? 'text-white' 
-                : 'bg-white text-gray-800 border border-gray-200'
-            } ${isSelected ? 'ring-1 ring-purple-200' : ''}`}
-            style={{
-              backgroundColor: mine ? colors.primary : colors.receivedMessage,
-              borderRadius: mine ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-            }}
-          >
-            {replied && (
-              <div className={`border-l-4 border-opacity-50 pl-3 py-2 mb-2 rounded text-sm ${
-                mine 
-                  ? 'bg-white bg-opacity-20 border-white' 
-                  : 'bg-gray-100 border-purple-400'
-              }`}>
-                <div className={`font-semibold text-xs ${
-                  mine ? 'text-white text-opacity-90' : 'text-purple-600'
-                }`}>
-                  {replied.sender_id === user.id ? "You" : activeChat.user.username}
-                </div>
-                <div className={`truncate text-sm ${
-                  mine ? 'text-white text-opacity-80' : 'text-gray-700'
-                }`}>
-                  {replied.content || "📎 Attachment"}
-                </div>
-              </div>
-            )}
-            
-            {m.content && (
-              <div className="text-sm leading-relaxed whitespace-pre-wrap break-words">
-                {m.content}
-              </div>
-            )}
-            
-            {m.attachments?.map((att, i) =>
-              att.type === "image" ? (
-                <img 
-                  key={i} 
-                  src={att.url} 
-                  className="mt-2 rounded-lg max-w-[280px] cursor-pointer hover:opacity-90 transition-opacity" 
-                  alt="Attachment"
-                />
-              ) : (
-                <a
-                  key={i}
-                  href={att.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`flex items-center mt-2 p-2 rounded-lg hover:opacity-90 transition-opacity ${
-                    mine ? 'bg-white bg-opacity-20' : 'bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm ${
-                      mine ? 'bg-white bg-opacity-30' : 'bg-purple-500'
-                    }`}>
-                      📎
-                    </div>
-                    <span className={`text-sm hover:underline ${
-                      mine ? 'text-white' : 'text-blue-600'
-                    }`}>
-                      Attachment
-                    </span>
-                  </div>
-                </a>
-              )
-            )}
-            
-            <div className={`flex items-center justify-end mt-1 gap-1 text-xs ${
-              mine ? 'text-white text-opacity-70' : 'text-gray-500'
-            }`}>
-              <span>{formatTime(m.created_at)}</span>
-              {mine && <MessageStatus message={m} currentUserId={user.id} />}
-            </div>
-          </div>
-
-          {/* WhatsApp-style linear action menu */}
-          {isSelected && (
-            <div className={`absolute -top-12 ${mine ? 'right-0' : 'left-0'} bg-white rounded-lg shadow-lg border border-gray-200 p-2 z-20 flex items-center gap-1`}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setReplyTo(m);
-                  setSelectedMessage(null);
-                }}
-                className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
-                title="Reply"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-                Reply
-              </button>
-              
-              <div className="w-px h-4 bg-gray-300"></div>
-              
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setForwardModal({ open: true, message: m });
-                  setSelectedMessage(null);
-                }}
-                className="px-3 py-1 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors flex items-center gap-1"
-                title="Forward"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-                Forward
-              </button>
-              
-              <div className="w-px h-4 bg-gray-300"></div>
-              
-              <Copy msg={m} onAction={() => setSelectedMessage(null)} showText={true} />
-              
-              {mine && (
-                <>
-                  <div className="w-px h-4 bg-gray-300"></div>
-                  
-                  <Edit
-                    message={m}
-                    onUpdated={(data) => {
-                      setMessages((prev) => prev.map((x) => (x.id === data.id ? data : x)));
-                      setSelectedMessage(null);
-                    }}
-                    onAction={() => setSelectedMessage(null)}
-                    showText={true}
-                  />
-                  
-                  <div className="w-px h-4 bg-gray-300"></div>
-                  
-                  <Delete
-                    message={m}
-                    onUpdated={(data) => {
-                      setMessages((prev) => prev.map((x) => (x.id === data.id ? data : x)));
-                      setSelectedMessage(null);
-                    }}
-                    onAction={() => setSelectedMessage(null)}
-                    showText={true}
-                  />
-                </>
-              )}
-            </div>
-          )}
-        </div>
+      <div className={`${size} rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm border-2 border-white shadow-sm`}>
+        {userInfo.initials}
       </div>
     );
   };
 
-  // Click outside to deselect message
+  // Fetch messages for the active conversation
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.group')) {
-        setSelectedMessage(null);
+    if (!activeConversation) return;
+    fetchMessages();
+
+    const sub = supabase
+      .channel(`public:messages:conversation=${activeConversation.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "messages",
+          filter: `conversation_id=eq.${activeConversation.id}`
+        },
+        () => fetchMessages()
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(sub);
+  }, [activeConversation]);
+
+  async function fetchMessages() {
+    if (!activeConversation) return;
+    const { data, error } = await supabase
+      .from("messages")
+      .select("*")
+      .eq("conversation_id", activeConversation.id)
+      .order("created_at", { ascending: true });
+
+    if (error) console.error(error);
+    else setMessages(data || []);
+    setTimeout(() => listRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }), 100);
+  }
+
+  // Fetch user's conversations
+  useEffect(() => {
+    if (!user) return;
+    fetchPeople();
+  }, [user]);
+
+  async function fetchPeople() {
+    const { data, error } = await supabase
+      .from("conversation_participants")
+      .select("conversations(id, type, name, messages(id, created_at), conversation_participants(user_id, forum_users(username, profile_photo)))")
+      .eq("user_id", user.id);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
+
+    const convs = (data || []).map((r) => {
+      const conv = r.conversations;
+      conv.participants = r.conversations.conversation_participants || [];
+      conv.last_message = (r.conversations.messages || []).slice(-1)[0] || null;
+      
+      // Get other participant info for DM name display
+      if (conv.type === "dm") {
+        const otherParticipant = conv.participants.find(p => p.user_id !== user.id);
+        if (otherParticipant && otherParticipant.forum_users) {
+          conv.display_name = otherParticipant.forum_users.username;
+          conv.avatar = otherParticipant.forum_users.profile_photo;
+        } else {
+          conv.display_name = conv.name;
+        }
+      } else {
+        conv.display_name = conv.name;
       }
+      
+      return conv;
+    });
+
+    const uniqueConvs = convs.filter((c, i, self) => i === self.findIndex(t => t.id === c.id));
+    setPeople(uniqueConvs);
+  }
+
+  // Get DM name properly
+  const getDMName = (conversation) => {
+    return conversation.display_name || conversation.name || "Unknown";
+  };
+
+  // Enhanced search for users
+  async function handleSearch(e) {
+    e.preventDefault();
+    if (!search.trim()) return;
+
+    const { data, error } = await supabase
+      .from("forum_users")
+      .select("id, username, description, profile_photo")
+      .ilike("username", `%${search.trim()}%`);
+
+    if (error) {
+      console.error("Search error:", error);
+      setSearchResults([]);
+    } else {
+      setSearchResults(data || []);
+    }
+  }
+
+  // Start or open a conversation
+  async function startConversation(otherUser) {
+    const { data: participantData } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", user.id);
+
+    const userConvoIds = (participantData || []).map(p => p.conversation_id);
+
+    const { data: existingConvos } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("type", "dm")
+      .in("id", userConvoIds);
+
+    let conversationId = null;
+
+    if (existingConvos?.length) {
+      for (let convo of existingConvos) {
+        const { data: participants } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", convo.id);
+        const userIds = participants.map((p) => p.user_id);
+        if (userIds.includes(user.id) && userIds.includes(otherUser.id)) {
+          conversationId = convo.id;
+          break;
+        }
+      }
+    }
+
+    if (!conversationId) {
+      const { data: newConvo } = await supabase
+        .from("conversations")
+        .insert({
+          type: "dm",
+          created_by: user.id,
+          name: `${user.username}-${otherUser.username}`,
+        })
+        .select()
+        .single();
+
+      conversationId = newConvo.id;
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: otherUser.id },
+      ]);
+    }
+
+    setActiveConversation({ 
+      id: conversationId, 
+      name: otherUser.username,
+      display_name: otherUser.username 
+    });
+    setMessages([]);
+    setSearchResults([]);
+    setSearch("");
+  }
+
+  // Enhanced file upload with multiple media types
+  async function handleFileChange(e) {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    const uploaded = [];
+    
+    for (const file of files) {
+      try {
+        const res = await uploadToCloudinary(file);
+        if (res) {
+          uploaded.push({
+            ...res,
+            file_type: getFileType(file.type),
+            file_size: file.size,
+            original_name: file.name
+          });
+        }
+      } catch (error) {
+        console.error("Upload failed for", file.name, error);
+      }
+    }
+    
+    setAttachments((a) => [...a, ...uploaded]);
+    setUploading(false);
+    
+    // Clear the input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  // Get file type for better handling
+  const getFileType = (mimeType) => {
+    if (mimeType.startsWith('image/')) return 'image';
+    if (mimeType.startsWith('video/')) return 'video';
+    if (mimeType.startsWith('audio/')) return 'audio';
+    if (mimeType === 'application/pdf') return 'pdf';
+    if (mimeType.includes('document') || mimeType.includes('docx') || mimeType.includes('doc')) return 'document';
+    if (mimeType.includes('spreadsheet') || mimeType.includes('xlsx') || mimeType.includes('xls')) return 'spreadsheet';
+    return 'file';
+  };
+
+  // Format time helper
+  const formatTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now - date) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  const formatFullTime = (dateString) => {
+    const date = new Date(dateString);
+    return date.toLocaleString();
+  };
+
+  // Enhanced Media Component with improved PDF, video, and document visibility
+const Media = ({ attachments }) => {
+  const [urls, setUrls] = useState([]);
+
+  useEffect(() => {
+    const fetchUrls = async () => {
+      const newUrls = await Promise.all(
+        attachments.map(async (att) => {
+          // If already public URL, return it
+          if (att.secure_url || att.url) return { ...att, fileUrl: att.secure_url || att.url };
+
+          // Otherwise, generate signed URL for private file
+          const { data, error } = await supabase.storage
+            .from("attachments") // change bucket name
+            .createSignedUrl(att.path, 60); // expires in 60 seconds
+
+          return { ...att, fileUrl: data?.signedUrl || "" };
+        })
+      );
+      setUrls(newUrls);
     };
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+    fetchUrls();
+  }, [attachments]);
 
   return (
-    <div className="flex h-[calc(100vh-64px)]" style={{ backgroundColor: colors.bg }}>
-      {/* Sidebar */}
-      <div className="w-1/3 bg-white flex flex-col" style={{ borderRight: `1px solid ${colors.border}` }}>
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200" style={{ backgroundColor: colors.primary }}>
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-xl font-semibold text-white">Forum Messages</h3>
-            <button className="p-2 hover:bg-white hover:bg-opacity-20 rounded-full transition-colors">
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-            </button>
-          </div>
-          
-          {/* Search */}
-          <div className="relative">
-            <input
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search students or start new chat"
-              className="w-full bg-white bg-opacity-90 border-0 rounded-lg px-4 py-2 pl-10 text-sm focus:outline-none focus:bg-white focus:shadow-sm transition-all placeholder-gray-600"
-            />
-            <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-          </div>
-        </div>
+    <div className="mt-2 space-y-2">
+      {urls.map((attachment, i) => {
+        const fileType =
+          attachment.resource_type || attachment.file_type || getFileType(attachment.format);
+        const fileUrl = attachment.fileUrl; // now uses signed URL
+        const fileName = attachment.original_filename || attachment.original_name || "Unknown File";
+        const fileSize = attachment.bytes || attachment.file_size;
 
-        {/* Conversations List */}
-        <div className="flex-1 overflow-y-auto">
-          {conversations.map((c) => (
-            <div
-              key={c.id}
-              className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-100 relative group ${
-                activeChat?.id === c.id ? "bg-purple-50 border-l-4 border-l-purple-500" : ""
-              }`}
-            >
-              <div
-                className="flex items-center gap-3 flex-1"
-                onClick={() => c.otherUser && setActiveChat({ id: c.id, user: c.otherUser })}
-              >
-                <div className="relative">
-                  <img
-                    src={c.otherUser?.profile_photo || "https://via.placeholder.com/48"}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-purple-200"
-                    alt={c.otherUser?.username}
-                  />
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-white"></div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="flex justify-between items-center mb-1">
-                    <div className="font-semibold text-gray-900 truncate">
-                      {c.otherUser?.username || "Unknown Student"}
-                    </div>
-                    <div className="text-xs" style={{ color: colors.textLight }}>
-                      {c.lastMessage ? formatTime(c.lastMessage.created_at) : ""}
-                    </div>
-                  </div>
-                  <div className="text-sm text-gray-600 truncate">
-                    {c.lastMessage?.content || (c.lastMessage?.attachments ? "📎 Attachment" : "Start a conversation...")}
-                  </div>
+        const fileIcons = { pdf: "📄", document: "📝", spreadsheet: "📊", default: "📎" };
+        const fileColors = { pdf: "text-red-600", document: "text-blue-600", spreadsheet: "text-green-600", default: "text-gray-600" };
+        const fileLabel =
+          fileType === "pdf"
+            ? "PDF"
+            : fileType === "spreadsheet"
+            ? "Spreadsheet"
+            : fileType === "document"
+            ? attachment.format?.toUpperCase() || "DOC"
+            : "File";
+
+        switch (fileType) {
+          case "image":
+            return (
+              <div key={i} className="relative group">
+                <img
+                  src={fileUrl}
+                  alt={fileName}
+                  className="max-w-xs max-h-64 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity border border-gray-200 shadow-sm"
+                  onClick={() => window.open(fileUrl, "_blank")}
+                />
+                <div className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  Click to view
                 </div>
               </div>
-              
-              {/* Delete Chat Button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowDeleteModal(c.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 p-2 hover:bg-red-100 rounded-full transition-all duration-200"
-                title="Delete Chat"
-              >
-                <svg className="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          ))}
-          
-          {/* Search Results */}
-          {searchTerm && searchResults.length > 0 && (
-            <div className="border-t border-gray-200 p-2">
-              <div className="text-sm px-2 py-1 font-medium" style={{ color: colors.textLight }}>Search Results</div>
+            );
+
+          case "video":
+            return (
+              <div key={i} className="relative bg-gray-900 rounded-lg overflow-hidden max-w-sm">
+                <video src={fileUrl} controls className="w-full max-h-64 bg-black" preload="metadata" poster={fileUrl ? `${fileUrl.replace(/\.[^/.]+$/, "")}.jpg` : undefined}>
+                  Your browser does not support the video tag.
+                </video>
+                <div className="absolute top-2 left-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                  Video
+                </div>
+              </div>
+            );
+
+          case "audio":
+            return (
+              <div key={i} className="p-3 bg-green-50 rounded-lg border border-green-200 max-w-sm flex flex-col space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm">🎵</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
+                    <p className="text-xs text-gray-500">{formatFileSize(fileSize)}</p>
+                  </div>
+                </div>
+                <audio src={fileUrl} controls className="w-full" />
+              </div>
+            );
+
+            case "pdf":
+  return (
+    <div key={i} className="max-w-sm border border-gray-300 rounded-lg overflow-hidden shadow-sm">
+      <div className="flex justify-between items-center p-2 bg-gray-100">
+        <p className="text-sm font-medium truncate">{fileName}</p>
+        <div className="flex gap-2">
+          {/* Open in new tab */}
+          <a 
+            href={fileUrl} 
+            target="_blank" 
+            rel="noopener noreferrer" 
+            className="px-2 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+          >
+            📄 Open
+          </a>
+          {/* Download */}
+          <a 
+            href={fileUrl} 
+            download={fileName} 
+            className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors"
+          >
+            💾 Download
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+
+
+          case "document":
+          case "spreadsheet":
+          default:
+            return (
+              <a key={i} href={fileUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 max-w-sm bg-gray-100 rounded-lg border border-gray-300 hover:bg-gray-200 transition-colors cursor-pointer">
+                <div className={`w-10 h-10 flex items-center justify-center bg-gray-300 rounded-lg flex-shrink-0`}>
+                  <span className={`text-lg ${fileColors[fileType] || fileColors.default}`}>
+                    {fileIcons[fileType] || fileIcons.default}
+                  </span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{fileName}</p>
+                  <p className="text-xs text-gray-500">{fileLabel} • {formatFileSize(fileSize)}</p>
+                </div>
+                <div className="flex-shrink-0">
+                  <a href={fileUrl} download={fileName} className="px-2 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                    💾
+                  </a>
+                </div>
+              </a>
+            );
+        }
+      })}
+    </div>
+  );
+};
+
+  // Format file size helper
+  const formatFileSize = (bytes) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  };
+
+  const MessageStatus = ({ message }) => (
+    <span className="text-xs text-gray-500">
+      {message?.created_at ? formatTime(message.created_at) : "Sending..."}
+    </span>
+  );
+
+  const Reply = ({ message, onCancel }) => (
+    <div className="p-3 mb-2 bg-purple-50 border border-purple-200 rounded-lg border-l-4 border-purple-500 flex justify-between items-center">
+      <div>
+        <div className="text-xs text-purple-600 font-medium">Replying to</div>
+        <span className="text-gray-800 text-sm">{message.content}</span>
+      </div>
+      <button onClick={onCancel} className="text-pink-500 hover:text-pink-700 ml-2 font-bold">✕</button>
+    </div>
+  );
+
+  const Copy = ({ message }) => {
+    const copyText = () => {
+      navigator.clipboard.writeText(message.content);
+    };
+    return <button onClick={copyText} className="text-xs text-gray-600 hover:text-purple-600 transition-colors">📋</button>;
+  };
+
+  const Delete = ({ message }) => {
+    const deleteMessage = async () => {
+      if (message.sender_id === user.id) {
+        await supabase
+          .from("messages")
+          .update({ deleted_for_everyone: true })
+          .eq("id", message.id);
+      } else {
+        await supabase
+          .from("messages")
+          .update({ deleted_for_users: [...(message.deleted_for_users || []), user.id] })
+          .eq("id", message.id);
+      }
+      fetchMessages();
+    };
+    return <button onClick={deleteMessage} className="text-xs text-pink-500 hover:text-pink-700 transition-colors">🗑️</button>;
+  };
+
+  const Edit = ({ message }) => (
+    <button
+      onClick={() => {
+        const newText = prompt("Edit message:", message.content);
+        if (newText !== null && newText.trim() !== "") {
+          supabase.from("messages").update({ content: newText, edited: true }).eq("id", message.id);
+          fetchMessages();
+        }
+      }}
+      className="text-xs text-purple-500 hover:text-purple-700 transition-colors"
+    >
+      ✏️
+    </button>
+  );
+
+  // Enhanced Forward with global search
+  const Forward = ({ message }) => {
+    const openForwardModal = async () => {
+      setForwardMessage(message);
+      
+      const { data: convData, error: convError } = await supabase
+        .from("conversation_participants")
+        .select("conversations(id, type, name)")
+        .eq("user_id", user.id);
+
+      const { data: userData, error: userError } = await supabase
+        .from("forum_users")
+        .select("id, username, profile_photo")
+        .neq("id", user.id)
+        .limit(50);
+
+      if (convError || userError) {
+        console.error("Error fetching forward targets:", convError, userError);
+        return;
+      }
+
+      const conversations = (convData || [])
+        .filter(c => c.conversations.id !== activeConversation?.id)
+        .map(c => ({
+          ...c.conversations,
+          type: 'conversation',
+          name: c.conversations.name
+        }));
+
+      const users = (userData || []).map(u => ({
+        id: u.id,
+        type: 'user',
+        name: u.username,
+        profile_photo: u.profile_photo
+      }));
+
+      setForwardTargets([...conversations, ...users]);
+      setForwardSearch("");
+      setForwardModal(true);
+    };
+
+    return <button onClick={openForwardModal} className="text-xs text-gray-600 hover:text-purple-600 transition-colors">➤</button>;
+  };
+
+  const handleForwardToTarget = async (target) => {
+    if (!forwardMessage) return;
+
+    let conversationId;
+
+    if (target.type === 'conversation') {
+      conversationId = target.id;
+    } else if (target.type === 'user') {
+      const otherUser = { id: target.id, username: target.name };
+      conversationId = await getOrCreateConversation(otherUser);
+    }
+
+    if (!conversationId) {
+      alert("Failed to forward message");
+      return;
+    }
+
+    await supabase.from("messages").insert({
+      conversation_id: conversationId,
+      sender_id: user.id,
+      content: forwardMessage.content,
+      attachments: forwardMessage.attachments || null,
+      forwarded_from: forwardMessage.id
+    });
+
+    setForwardModal(false);
+    setForwardMessage(null);
+    alert("Message forwarded!");
+  };
+
+  // Helper to get or create conversation
+  const getOrCreateConversation = async (otherUser) => {
+    const { data: participantData } = await supabase
+      .from("conversation_participants")
+      .select("conversation_id")
+      .eq("user_id", user.id);
+
+    const userConvoIds = (participantData || []).map(p => p.conversation_id);
+
+    const { data: existingConvos } = await supabase
+      .from("conversations")
+      .select("id")
+      .eq("type", "dm")
+      .in("id", userConvoIds);
+
+    let conversationId = null;
+
+    if (existingConvos?.length) {
+      for (let convo of existingConvos) {
+        const { data: participants } = await supabase
+          .from("conversation_participants")
+          .select("user_id")
+          .eq("conversation_id", convo.id);
+        const userIds = participants.map((p) => p.user_id);
+        if (userIds.includes(user.id) && userIds.includes(otherUser.id)) {
+          conversationId = convo.id;
+          break;
+        }
+      }
+    }
+
+    if (!conversationId) {
+      const { data: newConvo } = await supabase
+        .from("conversations")
+        .insert({
+          type: "dm",
+          created_by: user.id,
+          name: `${user.username}-${otherUser.username}`,
+        })
+        .select()
+        .single();
+
+      conversationId = newConvo.id;
+
+      await supabase.from("conversation_participants").insert([
+        { conversation_id: conversationId, user_id: user.id },
+        { conversation_id: conversationId, user_id: otherUser.id },
+      ]);
+    }
+
+    return conversationId;
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-50">
+      {/* Enhanced Sidebar with Purple Theme */}
+      <aside className="w-80 border-r border-gray-200 bg-white flex flex-col">
+        <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-purple-700">
+          <h2 className="font-bold text-xl mb-4 text-white">Messages</h2>
+          <form onSubmit={handleSearch} className="space-y-2">
+            <input
+              type="text"
+              className="p-3 border border-purple-300 rounded-lg w-full bg-white text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Search users..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </form>
+        </div>
+
+        {searchResults.length > 0 && (
+          <div className="border-b border-gray-200 max-h-48 overflow-y-auto">
+            <div className="p-2">
+              <h4 className="font-semibold text-sm mb-2 text-gray-600 uppercase tracking-wide">Search Results</h4>
               {searchResults.map((u) => (
                 <div
                   key={u.id}
-                  className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
-                  onClick={() => {
-                    // Handle creating new conversation
-                  }}
+                  className="flex items-center p-3 cursor-pointer hover:bg-purple-50 rounded-lg transition-colors"
+                  onClick={() => startConversation(u)}
                 >
-                  <img src={u.profile_photo || "https://via.placeholder.com/40"} className="w-10 h-10 rounded-full border-2 border-purple-200" alt={u.username} />
-                  <div className="font-medium text-gray-900">{u.username}</div>
+                  {u.profile_photo ? (
+                    <img
+                      src={u.profile_photo}
+                      alt={u.username}
+                      className="w-10 h-10 rounded-full mr-3 object-cover border-2 border-purple-200"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full mr-3 bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm border-2 border-purple-200">
+                      {u.username ? u.username.substring(0, 2).toUpperCase() : "U"}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-gray-900 truncate">{u.username}</p>
+                    <p className="text-sm text-gray-500 truncate">{u.description || "No bio"}</p>
+                  </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        )}
 
-      {/* Chat Area */}
-      <div className="flex-1 flex flex-col">
-        {!activeChat ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-500" style={{ backgroundColor: colors.bg }}>
-            <div className="text-center">
-              <div className="w-64 h-32 mx-auto mb-8 opacity-30">
-                <svg viewBox="0 0 200 120" className="w-full h-full">
-                  <defs>
-                    <linearGradient id="forum-bg" x1="50%" y1="0%" x2="50%" y2="100%">
-                      <stop offset="0%" stopColor={colors.primary} stopOpacity="0.1"/>
-                      <stop offset="100%" stopColor={colors.accent} stopOpacity="0.2"/>
-                    </linearGradient>
-                  </defs>
-                  <rect width="200" height="120" fill="url(#forum-bg)" rx="20"/>
-                  <circle cx="50" cy="40" r="15" fill={colors.primary} opacity="0.3"/>
-                  <circle cx="100" cy="60" r="12" fill={colors.accent} opacity="0.3"/>
-                  <circle cx="150" cy="45" r="18" fill={colors.primary} opacity="0.2"/>
-                  <rect x="30" y="75" width="140" height="4" fill={colors.primary} opacity="0.2" rx="2"/>
-                  <rect x="50" y="85" width="100" height="3" fill={colors.textLight} opacity="0.2" rx="1"/>
-                </svg>
-              </div>
-              <h2 className="text-2xl font-medium text-gray-800 mb-2">College Forum Chat</h2>
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-pink-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-              </div>
-              <p className="text-gray-600 max-w-md">
-                Connect with your fellow students, discuss assignments, share notes, and build meaningful academic relationships.
-              </p>
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-2">
+            <h4 className="font-semibold text-sm mb-2 text-gray-600 uppercase tracking-wide px-2">Conversations</h4>
+            <div className="space-y-1">
+              {people.map((p) => (
+                <div
+                  key={p.id}
+                  className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                    activeConversation?.id === p.id 
+                      ? 'bg-purple-100 border border-purple-300' 
+                      : 'hover:bg-gray-100'
+                  }`}
+                  onClick={() => setActiveConversation(p)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center flex-1 min-w-0">
+                      {p.avatar ? (
+                        <img
+                          src={p.avatar}
+                          alt={getDMName(p)}
+                          className="w-8 h-8 rounded-full mr-3 object-cover border border-gray-200"
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full mr-3 bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center text-white font-semibold text-xs">
+                          {getDMName(p) ? getDMName(p).substring(0, 2).toUpperCase() : "UN"}
+                        </div>
+                      )}
+                      <span className="font-medium text-gray-900 truncate flex-1">{getDMName(p)}</span>
+                    </div>
+                    {p.last_message && (
+                      <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                        {formatTime(p.last_message.created_at)}
+                      </span>
+                    )}
+                  </div>
+                  {p.last_message && (
+                    <p className="text-sm text-gray-500 truncate mt-1 ml-11">
+                      {p.last_message.content || "Media message"}
+                    </p>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
-        ) : (
+        </div>
+      </aside>
+
+      {/* Enhanced Chat Window */}
+      <div className="flex-1 flex flex-col">
+        {activeConversation ? (
           <>
-            {/* Chat Header */}
-            <div className="bg-white p-4 flex items-center justify-between border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <img 
-                  src={activeChat.user.profile_photo || "https://via.placeholder.com/40"} 
-                  className="w-10 h-10 rounded-full object-cover border-2 border-purple-200" 
-                  alt={activeChat.user.username}
-                />
-                <div>
-                  <div className="font-semibold text-gray-900">{activeChat.user.username}</div>
-                  <div className="text-sm" style={{ color: colors.accent }}>Active on forum</div>
+            <header className="p-4 border-b border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center">
+                <Avatar userId={activeConversation.participants?.find(p => p.user_id !== user.id)?.user_id} size="w-10 h-10" />
+                <div className="ml-3">
+                  <h3 className="text-xl font-semibold text-gray-900">{getDMName(activeConversation)}</h3>
+                  <p className="text-sm text-gray-500">Click on message time for full timestamp</p>
                 </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </button>
-                <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-              </div>
-            </div>
+            </header>
 
-            {/* Messages Area */}
-            <div 
-              ref={scrollRef} 
-              className="flex-1 overflow-y-auto p-4 space-y-1"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236C63FF' fill-opacity='0.03'%3E%3Cpath d='M30 30c0-6.627-5.373-12-12-12s-12 5.373-12 12 5.373 12 12 12 12-5.373 12-12zm12-12c0 6.627 5.373 12 12 12s12-5.373 12-12-5.373-12-12-12-12 5.373-12 12z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                backgroundColor: colors.bg
-              }}
-            >
-              {messages.map((m, i) => {
-                const prev = messages[i - 1];
-                const showDate = !prev || new Date(prev.created_at).toDateString() !== new Date(m.created_at).toDateString();
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
+              {messages.map((m) => {
+                if (m.deleted_for_everyone || (m.deleted_for_users?.includes(user.id))) return null;
+                const isOwn = m.sender_id === user.id;
+                const senderInfo = getUserInfo(m.sender_id);
+                
                 return (
-                  <div key={m.id}>
-                    {showDate && (
-                      <div className="flex justify-center my-4">
-                        <div className="bg-white rounded-lg px-3 py-1 text-xs text-gray-600 shadow-sm border border-gray-200">
-                          {formatDateHeader(m.created_at)}
+                  <div
+                    key={m.id}
+                    className={`flex ${isOwn ? 'justify-end' : 'justify-start'} items-end gap-2`}
+                  >
+                    {!isOwn && (
+                      <Avatar userId={m.sender_id} size="w-8 h-8" />
+                    )}
+                    
+                    <div
+                      className={`max-w-[70%] ${
+                        isOwn
+                          ? "bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-2xl rounded-br-md shadow-md"
+                          : "bg-white text-gray-900 rounded-2xl rounded-bl-md shadow-md border border-gray-200"
+                      } p-4 relative group`}
+                    >
+                      {!isOwn && (
+                        <div className="text-xs font-semibold mb-1 text-purple-600">
+                          {senderInfo.name}
+                        </div>
+                      )}
+
+                      {m.forwarded_from && (
+                        <div className={`text-xs mb-2 ${isOwn ? 'text-purple-100' : 'text-gray-500'} italic flex items-center gap-1`}>
+                          <span>📤</span> Forwarded
+                        </div>
+                      )}
+                      
+                      {m.reply_to && (
+                        <div className={`text-xs mb-2 p-2 rounded ${
+                          isOwn ? 'bg-purple-600' : 'bg-gray-100'
+                        }`}>
+                          <div className="font-medium">Replying to:</div>
+                          <div className="truncate">Previous message content</div>
+                        </div>
+                      )}
+
+                      {m.content && (
+                        <div className="text-sm whitespace-pre-wrap break-words">{m.content}</div>
+                      )}
+                      
+                      {m.attachments && <Media attachments={m.attachments} />}
+                      
+                      <div className="flex items-center justify-between mt-2 text-xs gap-2">
+                        <div className={`${isOwn ? 'text-purple-100' : 'text-gray-500'}`}>
+                          <span 
+                            className="cursor-pointer hover:underline" 
+                            title={formatFullTime(m.created_at)}
+                          >
+                            <MessageStatus message={m} />
+                          </span>
+                          {m.edited && <span className="ml-1">(edited)</span>}
+                        </div>
+                        
+                        <div className={`flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ${
+                          isOwn ? 'text-purple-100' : 'text-gray-500'
+                        }`}>
+                          <button onClick={() => setReplyTo(m)} className="hover:scale-110 transition-transform">💬</button>
+                          <Copy message={m} />
+                          <Forward message={m} />
+                          {isOwn && <Edit message={m} />}
+                          <Delete message={m} />
                         </div>
                       </div>
+                    </div>
+
+                    {isOwn && (
+                      <Avatar userId={m.sender_id} size="w-8 h-8" />
                     )}
-                    <MessageBubble m={m} />
                   </div>
                 );
               })}
+              <div ref={listRef} />
             </div>
+            
 
-            {/* Reply Bar */}
-            {replyTo && (
-              <div className="bg-purple-50 border-l-4 border-purple-400 p-3 flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="text-sm font-medium text-purple-700 mb-1">
-                    Replying to {replyTo.sender_id === user.id ? "yourself" : activeChat.user.username}
+            {/* Enhanced Forward Modal */}
+            {forwardModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl w-full max-w-md shadow-2xl">
+                  <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-purple-600 to-purple-700 rounded-t-xl">
+                    <h4 className="font-bold text-lg text-white">Forward message</h4>
+                    <p className="text-sm text-purple-100">Send to a conversation or user</p>
                   </div>
-                  <div className="text-sm text-gray-700 truncate">
-                    {replyTo.content || "📎 Attachment"}
+
+                  <div className="p-4">
+                    <input
+                      type="text"
+                      placeholder="Search conversations or users..."
+                      value={forwardSearch}
+                      onChange={(e) => setForwardSearch(e.target.value)}
+                      className="w-full p-3 border border-purple-300 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    />
+                  </div>
+
+                  <div className="max-h-64 overflow-y-auto">
+                    {filteredForwardTargets.length === 0 && (
+                      <p className="text-center py-8 text-gray-500">
+                        {forwardSearch ? "No matches found" : "No targets available"}
+                      </p>
+                    )}
+
+                    {filteredForwardTargets.map((target) => (
+                      <div
+                        key={`${target.type}-${target.id}`}
+                        className="flex items-center p-4 cursor-pointer hover:bg-purple-50 transition-colors border-b border-gray-100 last:border-b-0"
+                        onClick={() => handleForwardToTarget(target)}
+                      >
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
+                          {target.type === 'user' ? (
+                            target.profile_photo ? (
+                              <img src={target.profile_photo} alt={target.name} className="w-10 h-10 rounded-full object-cover" />
+                            ) : (
+                              <span className="text-white font-semibold text-sm">
+                                {target.name ? target.name.substring(0, 2).toUpperCase() : "U"}
+                              </span>
+                            )
+                          ) : (
+                            <span className="text-white">💬</span>
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <p className="font-medium text-gray-900">{target.name}</p>
+                          <p className="text-sm text-gray-500">
+                            {target.type === 'user' ? 'User' : 'Conversation'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="p-4 border-t border-gray-200">
+                    <button
+                      className="w-full p-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                      onClick={() => setForwardModal(false)}
+                    >
+                      Cancel
+                    </button>
                   </div>
                 </div>
-                <button 
-                  onClick={() => setReplyTo(null)}
-                  className="p-1 hover:bg-purple-200 rounded-full transition-colors ml-4"
-                >
-                  <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
               </div>
             )}
 
-            {/* Input Area */}
-            <div className="bg-white p-4 flex items-end gap-3 border-t border-gray-200">
-              <label className="cursor-pointer flex-shrink-0">
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  onChange={(e) => { 
-                    const f = e.target.files?.[0]; 
-                    if (f) sendMessage(f); 
-                    e.target.value = ""; 
-                  }} 
-                />
-                <div className="w-10 h-10 bg-gray-100 hover:bg-purple-100 rounded-full flex items-center justify-center transition-colors border border-gray-200">
-                  <svg className="w-5 h-5" style={{ color: colors.primary }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
+            {/* Enhanced Input Area - Fixed positioning */}
+            <div className="border-t border-gray-200 bg-white">
+              {replyTo && (
+                <div className="p-4 pb-0">
+                  <Reply message={replyTo} onCancel={() => setReplyTo(null)} />
                 </div>
-              </label>
+              )}
               
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  placeholder="Type a message to your classmate..."
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-full px-4 py-3 pr-12 focus:outline-none focus:bg-white focus:shadow-sm transition-all"
-                  style={{ 
-                    borderColor: newMessage.trim() ? colors.primary : colors.border,
-                    boxShadow: newMessage.trim() ? `0 0 0 1px ${colors.primary}` : 'none'
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      sendMessage();
-                    }
-                  }}
-                />
-                <button className="absolute right-3 top-1/2 transform -translate-y-1/2 p-1 hover:bg-gray-100 rounded-full transition-colors">
-                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1.01M15 10h1.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </button>
-              </div>
-              
-              <button 
-                onClick={() => sendMessage()} 
-                disabled={uploading || (!newMessage.trim())}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all ${
-                  newMessage.trim() 
-                    ? 'text-white shadow-sm' 
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                }`}
-                style={{ 
-                  backgroundColor: newMessage.trim() ? colors.primary : undefined,
-                  boxShadow: newMessage.trim() ? '0 2px 8px rgba(108, 99, 255, 0.3)' : undefined
-                }}
-              >
-                {uploading ? (
-                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
+              {attachments.length > 0 && (
+                <div className="px-4 pt-4 pb-0">
+                  <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-purple-700">
+                        {attachments.length} attachment{attachments.length !== 1 ? 's' : ''}
+                      </span>
+                      <button
+                        onClick={() => setAttachments([])}
+                        className="text-pink-500 hover:text-pink-700 text-sm transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {attachments.map((a, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 bg-white rounded border border-purple-200">
+                          <div className="flex items-center flex-1 min-w-0">
+                            <span className="text-lg mr-2">
+                              {a.resource_type === 'image' ? '🖼️' : 
+                               a.resource_type === 'video' ? '🎥' : 
+                               a.format === 'pdf' ? '📄' : '📎'}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {a.original_filename || a.original_name || 'File'}
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {a.format?.toUpperCase()} • {formatFileSize(a.bytes)}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                            className="ml-2 text-pink-500 hover:text-pink-700 transition-colors"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <div className="p-4">
+                <div className="flex gap-3 items-end">
+                  <div className="flex-1">
+                    <textarea
+                      className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="Type a message..."
+                      rows={1}
+                      style={{ minHeight: '44px', maxHeight: '120px' }}
+                      onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          if (!text.trim() && attachments.length === 0) return;
+                          
+                          const messageData = {
+                            conversation_id: activeConversation.id,
+                            sender_id: user.id,
+                            content: text.trim() || null,
+                            attachments: attachments.length ? attachments : null,
+                            reply_to: replyTo?.id || null,
+                          };
+
+                          await supabase.from("messages").insert(messageData);
+                          setText("");
+                          setAttachments([]);
+                          setReplyTo(null);
+                          fetchMessages();
+                        }
+                      }}
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="file"
+                      multiple
+                      ref={fileInputRef}
+                      onChange={handleFileChange}
+                      className="hidden"
+                      accept="*/*"
+                    />
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="p-3 bg-purple-100 hover:bg-purple-200 disabled:bg-gray-200 rounded-lg transition-colors disabled:opacity-50"
+                      title="Attach files"
+                    >
+                      {uploading ? '⏳' : '📎'}
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        if (!text.trim() && attachments.length === 0) return;
+                        
+                        const messageData = {
+                          conversation_id: activeConversation.id,
+                          sender_id: user.id,
+                          content: text.trim() || null,
+                          attachments: attachments.length ? attachments : null,
+                          reply_to: replyTo?.id || null,
+                        };
+
+                        await supabase.from("messages").insert(messageData);
+                        setText("");
+                        setAttachments([]);
+                        setReplyTo(null);
+                        fetchMessages();
+                      }}
+                      disabled={!text.trim() && attachments.length === 0}
+                      className="p-3 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 disabled:bg-gray-300 text-white rounded-lg transition-all disabled:cursor-not-allowed shadow-md"
+                      title="Send message"
+                    >
+                      ➤
+                    </button>
+                  </div>
+                </div>
+
+                {uploading && (
+                  <div className="mt-2 text-sm text-purple-600 flex items-center gap-2">
+                    <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+                    Uploading files...
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
           </>
-        )}
-      </div>
-
-      {/* Delete Chat Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-mx-4 shadow-2xl">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Delete Chat</h3>
-              <p className="text-gray-600 mb-6">
-                Are you sure you want to delete this chat? This action cannot be undone and all messages will be permanently removed.
+        ) : (
+          <div className="flex-1 flex flex-col items-center justify-center text-gray-500 bg-gray-50">
+            <div className="text-center max-w-md">
+              <div className="text-6xl mb-4">💬</div>
+              <h3 className="text-xl font-semibold mb-2 text-gray-700">Start a conversation</h3>
+              <p className="text-gray-500">
+                Select an existing conversation or search for a user to start chatting
               </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={() => setShowDeleteModal(null)}
-                  className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => deleteConversation(showDeleteModal)}
-                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
-                >
-                  Delete Chat
-                </button>
-              </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* Forward Modal */}
-      {forwardModal.open && (
-        <Forward
-          message={forwardModal.message}
-          onClose={() => setForwardModal({ open: false, message: null })}
-          onForwarded={(data) => setMessages((prev) => [...prev, data])}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 }

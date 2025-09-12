@@ -175,8 +175,8 @@ const Post = () => {
       {/* Floating Success Toast */}
       {showSuccess && (
         <div className="fixed top-8 right-8 z-50 transform animate-bounce">
-          <div className="bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center space-x-3 border-2 border-white/20">
-            <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
+          <div className="bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-white px-8 py-4 rounded-3xl shadow-2xl flex items-center space-x-3 border-2 border-white/20 dark:border-gray-800/20">
+            <div className="w-8 h-8 bg-white/20 dark:bg-gray-800/20 rounded-full flex items-center justify-center animate-pulse">
               <Heart className="w-5 h-5 text-white fill-current" />
             </div>
             <div>
@@ -194,7 +194,7 @@ const Post = () => {
         <div className="absolute -bottom-20 -right-20 w-60 h-60 bg-gradient-to-r from-[#FF6584]/20 to-[#6C63FF]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
         
         <div 
-          className="relative bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 overflow-hidden transition-all duration-500 hover:shadow-3xl"
+          className="relative bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/20 overflow-hidden transition-all duration-500 hover:shadow-3xl"
           onMouseEnter={() => setIsHovering(true)}
           onMouseLeave={() => setIsHovering(false)}
         >
@@ -212,7 +212,7 @@ const Post = () => {
                 <h1 className="text-3xl font-black bg-gradient-to-r from-[#6C63FF] to-[#FF6584] bg-clip-text text-transparent">
                   Create Magic ✨
                 </h1>
-                <p className="text-[#6B7280] text-lg font-medium">Share your story with the universe</p>
+                <p className="text-gray-600 dark:text-gray-400 text-lg font-medium">Share your story with the universe</p>
               </div>
             </div>
           </div>
@@ -222,7 +222,7 @@ const Post = () => {
             <div className="relative group">
               <div className="absolute -inset-1 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] rounded-3xl opacity-20 group-focus-within:opacity-40 transition-opacity duration-300 blur"></div>
               <textarea
-                className="relative w-full p-8 rounded-2xl border-2 border-[#E5E7EB] focus:outline-none focus:border-transparent focus:ring-4 focus:ring-[#6C63FF]/20 transition-all duration-300 text-[#111827] placeholder-[#6B7280] resize-none bg-[#F9FAFB]/50 backdrop-blur-sm text-lg leading-relaxed font-medium shadow-inner"
+                className="relative w-full p-8 rounded-2xl border-2 border-gray-200 dark:border-gray-700 focus:outline-none focus:border-transparent focus:ring-4 focus:ring-[#6C63FF]/20 transition-all duration-300 text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 resize-none bg-gray-50/50 dark:bg-gray-800/50 backdrop-blur-sm text-lg leading-relaxed font-medium shadow-inner"
                 rows="6"
                 placeholder="What's inspiring you today? Share your thoughts, dreams, and wild ideas..."
                 value={content}
@@ -231,7 +231,7 @@ const Post = () => {
                 maxLength={500}
               />
               <div className="absolute bottom-4 right-6 flex items-center space-x-2">
-                <div className={`text-sm font-semibold ${content.length > 400 ? 'text-[#FF6584]' : 'text-[#6B7280]'}`}>
+                <div className={`text-sm font-semibold ${content.length > 400 ? 'text-[#FF6584]' : 'text-gray-500 dark:text-gray-400'}`}>
                   {content.length}/500
                 </div>
                 <Zap className="w-4 h-4 text-[#6C63FF]" />
@@ -239,14 +239,14 @@ const Post = () => {
             </div>
 
             {/* Enhanced Media Tabs */}
-            <div className="bg-gradient-to-r from-[#F9FAFB] to-white rounded-2xl p-3 border border-[#E5E7EB] shadow-inner">
+            <div className="bg-gradient-to-r from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 rounded-2xl p-3 border border-gray-200 dark:border-gray-700 shadow-inner">
               <div className="flex space-x-2">
                 <button
                   type="button"
                   className={`flex-1 flex items-center justify-center space-x-3 py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
                     activeTab === "image"
                       ? "bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-white shadow-xl shadow-[#6C63FF]/25"
-                      : "text-[#6B7280] hover:text-[#111827] hover:bg-white/70 hover:shadow-lg"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-800/70 hover:shadow-lg"
                   }`}
                   onClick={() => setActiveTab("image")}
                 >
@@ -259,7 +259,7 @@ const Post = () => {
                   className={`flex-1 flex items-center justify-center space-x-3 py-4 px-6 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 ${
                     activeTab === "video"
                       ? "bg-gradient-to-r from-[#6C63FF] to-[#FF6584] text-white shadow-xl shadow-[#6C63FF]/25"
-                      : "text-[#6B7280] hover:text-[#111827] hover:bg-white/70 hover:shadow-lg"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-white/70 dark:hover:bg-gray-800/70 hover:shadow-lg"
                   }`}
                   onClick={() => setActiveTab("video")}
                 >
@@ -277,7 +277,7 @@ const Post = () => {
                   className={`group relative p-12 border-3 border-dashed rounded-3xl transition-all duration-500 cursor-pointer transform hover:scale-105 ${
                     dragActive 
                       ? "border-[#6C63FF] bg-gradient-to-br from-[#6C63FF]/10 to-[#FF6584]/10 scale-105 shadow-2xl" 
-                      : "border-[#E5E7EB] bg-gradient-to-br from-[#F9FAFB] to-white hover:border-[#6C63FF]/50 hover:shadow-xl"
+                      : "border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 hover:border-[#6C63FF]/50 hover:shadow-xl"
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -301,10 +301,10 @@ const Post = () => {
                     </div>
                     
                     <div className="space-y-3">
-                      <h3 className="text-2xl font-black text-[#111827] group-hover:text-[#6C63FF] transition-colors duration-300">
+                      <h3 className="text-2xl font-black text-gray-800 dark:text-gray-200 group-hover:text-[#6C63FF] transition-colors duration-300">
                         {dragActive ? "🎯 Drop it like it's hot!" : "📸 Click or Drop Your Image"}
                       </h3>
-                      <p className="text-[#6B7280] text-lg font-medium">
+                      <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                         JPG, PNG, WebP • Up to 10MB • Make it beautiful!
                       </p>
                     </div>
@@ -313,15 +313,15 @@ const Post = () => {
 
                 {/* Image Preview */}
                 {imageFile && (
-                  <div className="bg-gradient-to-r from-white to-[#F9FAFB] rounded-3xl p-8 border border-[#E5E7EB] shadow-xl">
+                  <div className="bg-gradient-to-r from-white dark:from-gray-800 to-gray-50 dark:to-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center space-x-4">
                         <div className="w-14 h-14 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] rounded-2xl flex items-center justify-center shadow-lg">
                           <CheckCircle className="w-7 h-7 text-white" />
                         </div>
                         <div>
-                          <h4 className="font-black text-xl text-[#111827]">{imageFile.name}</h4>
-                          <p className="text-[#6B7280] text-lg font-medium">
+                          <h4 className="font-black text-xl text-gray-800 dark:text-gray-200">{imageFile.name}</h4>
+                          <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                             {(imageFile.size / 1024 / 1024).toFixed(2)} MB • Ready to rock!
                           </p>
                         </div>
@@ -366,7 +366,7 @@ const Post = () => {
                   className={`group relative p-12 border-3 border-dashed rounded-3xl transition-all duration-500 cursor-pointer transform hover:scale-105 ${
                     dragActive 
                       ? "border-[#6C63FF] bg-gradient-to-br from-[#6C63FF]/10 to-[#FF6584]/10 scale-105 shadow-2xl" 
-                      : "border-[#E5E7EB] bg-gradient-to-br from-[#F9FAFB] to-white hover:border-[#6C63FF]/50 hover:shadow-xl"
+                      : "border-gray-200 dark:border-gray-700 bg-gradient-to-br from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 hover:border-[#6C63FF]/50 hover:shadow-xl"
                   }`}
                   onDragEnter={handleDrag}
                   onDragLeave={handleDrag}
@@ -389,10 +389,10 @@ const Post = () => {
                     </div>
                     
                     <div className="space-y-3">
-                      <h3 className="text-2xl font-black text-[#111827] group-hover:text-[#6C63FF] transition-colors duration-300">
+                      <h3 className="text-2xl font-black text-gray-800 dark:text-gray-200 group-hover:text-[#6C63FF] transition-colors duration-300">
                         {dragActive ? "🎬 Action! Drop your video!" : "🎥 Upload Your Masterpiece"}
                       </h3>
-                      <p className="text-[#6B7280] text-lg font-medium">
+                      <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                         MP4, MOV, AVI • Up to 100MB • Lights, camera, action!
                       </p>
                     </div>
@@ -401,15 +401,15 @@ const Post = () => {
 
                 {/* Video Preview */}
                 {videoFile && (
-                  <div className="bg-gradient-to-r from-white to-[#F9FAFB] rounded-3xl p-8 border border-[#E5E7EB] shadow-xl">
+                  <div className="bg-gradient-to-r from-white dark:from-gray-800 to-gray-50 dark:to-gray-900 rounded-3xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <div className="w-14 h-14 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] rounded-2xl flex items-center justify-center shadow-lg">
                           <CheckCircle className="w-7 h-7 text-white" />
                         </div>
                         <div>
-                          <h4 className="font-black text-xl text-[#111827]">{videoFile.name}</h4>
-                          <p className="text-[#6B7280] text-lg font-medium">
+                          <h4 className="font-black text-xl text-gray-800 dark:text-gray-200">{videoFile.name}</h4>
+                          <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">
                             {(videoFile.size / 1024 / 1024).toFixed(2)} MB • Video magic ready!
                           </p>
                         </div>
@@ -428,7 +428,7 @@ const Post = () => {
             )}
 
             {/* Footer with Visibility & Submit */}
-            <div className="flex items-center justify-between pt-8 border-t-2 border-[#E5E7EB]">
+            <div className="flex items-center justify-between pt-8 border-t-2 border-gray-200 dark:border-gray-700">
               {/* Enhanced Visibility Toggle */}
               <div className="flex items-center space-x-6">
                 <div
@@ -440,18 +440,18 @@ const Post = () => {
                       className={`w-20 h-10 rounded-full p-1 transition-all duration-500 shadow-lg ${
                         isPublic 
                           ? "bg-gradient-to-r from-[#6C63FF] to-[#FF6584]" 
-                          : "bg-gradient-to-r from-[#E5E7EB] to-[#D1D5DB]"
+                          : "bg-gradient-to-r from-gray-200 dark:from-gray-600 to-gray-300 dark:to-gray-500"
                       }`}
                     >
                       <div
-                        className={`bg-white w-8 h-8 rounded-full shadow-xl flex items-center justify-center transform transition-all duration-500 ${
+                        className={`bg-white dark:bg-gray-900 w-8 h-8 rounded-full shadow-xl flex items-center justify-center transform transition-all duration-500 ${
                           isPublic ? "translate-x-10" : "translate-x-0"
                         } group-hover:scale-110`}
                       >
                         {isPublic ? (
                           <Globe className="w-4 h-4 text-[#6C63FF]" />
                         ) : (
-                          <Lock className="w-4 h-4 text-[#6B7280]" />
+                          <Lock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                         )}
                       </div>
                     </div>
@@ -460,10 +460,10 @@ const Post = () => {
                     )}
                   </div>
                   <div>
-                    <p className="font-black text-xl text-[#111827]">
+                    <p className="font-black text-xl text-gray-800 dark:text-gray-200">
                       {isPublic ? "🌍 Public" : "🔒 Private"}
                     </p>
-                    <p className="text-[#6B7280] text-sm font-medium">
+                    <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
                       {isPublic ? "Share with the world!" : "Just for you"}
                     </p>
                   </div>
@@ -502,7 +502,7 @@ const Post = () => {
                   
                   {/* Progress Bar */}
                   {loading && uploadProgress > 0 && (
-                    <div className="absolute bottom-0 left-0 h-2 bg-white/20 rounded-full overflow-hidden w-full">
+                    <div className="absolute bottom-0 left-0 h-2 bg-white/20 dark:bg-gray-800/20 rounded-full overflow-hidden w-full">
                       <div 
                         className="h-full bg-gradient-to-r from-white to-white/70 transition-all duration-300 rounded-full"
                         style={{ width: `${uploadProgress}%` }}
@@ -524,9 +524,9 @@ const Post = () => {
       {/* Ultra Enhanced Crop Modal */}
       {showCrop && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-xl flex items-center justify-center z-50 p-6 animate-in fade-in duration-500">
-          <div className="bg-white rounded-3xl max-w-5xl w-full max-h-[95vh] overflow-auto shadow-2xl border-4 border-white/20 relative">
+          <div className="bg-white dark:bg-gray-900 rounded-3xl max-w-5xl w-full max-h-[95vh] overflow-auto shadow-2xl border-4 border-white/20 dark:border-gray-700/20 relative">
             {/* Animated Header */}
-            <div className="relative p-8 border-b border-[#E5E7EB] bg-gradient-to-r from-[#6C63FF]/5 via-[#FF6584]/5 to-[#6C63FF]/5 overflow-hidden">
+            <div className="relative p-8 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-[#6C63FF]/5 via-[#FF6584]/5 to-[#6C63FF]/5 overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-[#6C63FF] to-[#FF6584] opacity-10 animate-pulse"></div>
               <div className="relative flex items-center justify-between">
                 <div className="flex items-center space-x-4">
@@ -537,21 +537,21 @@ const Post = () => {
                     <h3 className="text-3xl font-black bg-gradient-to-r from-[#6C63FF] to-[#FF6584] bg-clip-text text-transparent">
                       ✂️ Perfect Your Shot
                     </h3>
-                    <p className="text-[#6B7280] text-lg font-medium">Make every pixel count!</p>
+                    <p className="text-gray-500 dark:text-gray-400 text-lg font-medium">Make every pixel count!</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowCrop(false)}
-                  className="p-3 hover:bg-[#F3F4F6] rounded-2xl transition-all duration-200 transform hover:scale-110 hover:rotate-90"
+                  className="p-3 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all duration-200 transform hover:scale-110 hover:rotate-90"
                 >
-                  <X className="w-8 h-8 text-[#6B7280]" />
+                  <X className="w-8 h-8 text-gray-500 dark:text-gray-400" />
                 </button>
               </div>
             </div>
 
             {/* Crop Area */}
             <div className="p-8">
-              <div className="bg-gradient-to-r from-[#F9FAFB] to-white rounded-3xl p-8 border-2 border-[#E5E7EB] shadow-inner">
+              <div className="bg-gradient-to-r from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 rounded-3xl p-8 border-2 border-gray-200 dark:border-gray-700 shadow-inner">
                 <ReactCrop
                   crop={crop}
                   onChange={(_, percentCrop) => setCrop(percentCrop)}
@@ -572,12 +572,12 @@ const Post = () => {
             </div>
 
             {/* Enhanced Footer */}
-            <div className="p-8 border-t-2 border-[#E5E7EB] bg-gradient-to-r from-[#F9FAFB] to-white rounded-b-3xl">
+            <div className="p-8 border-t-2 border-gray-200 dark:border-gray-700 bg-gradient-to-r from-gray-50 dark:from-gray-800 to-white dark:to-gray-900 rounded-b-3xl">
               <div className="flex justify-end space-x-4">
                 <button
                   type="button"
                   onClick={() => setShowCrop(false)}
-                  className="px-8 py-4 border-2 border-[#E5E7EB] text-[#111827] rounded-2xl hover:bg-white hover:shadow-lg transition-all duration-200 font-bold text-lg transform hover:scale-105"
+                  className="px-8 py-4 border-2 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 rounded-2xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg transition-all duration-200 font-bold text-lg transform hover:scale-105"
                 >
                   Skip Crop
                 </button>

@@ -36,19 +36,19 @@ const Explore = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB] flex justify-center">
-      <div className="bg-white rounded-2xl shadow-md max-w-2xl w-full border border-[#E5E7EB]">
+    <div className="min-h-screen bg-[#F9FAFB] dark:bg-gray-900 flex justify-center">
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-md max-w-2xl w-full border border-[#E5E7EB] dark:border-gray-700">
         {/* Search Bar */}
         <form
           onSubmit={handleSearch}
-          className="sticky top-0 flex border-b border-[#E5E7EB] p-3 bg-white z-10"
+          className="sticky top-0 flex border-b border-[#E5E7EB] dark:border-gray-700 p-3 bg-white dark:bg-gray-800 z-10"
         >
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by username..."
-            className="flex-1 px-4 py-2 border border-[#E5E7EB] rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C63FF]"
+            className="flex-1 px-4 py-2 border border-[#E5E7EB] dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6C63FF] dark:bg-gray-700 dark:text-gray-200"
           />
           <button
             type="submit"
@@ -71,21 +71,21 @@ const Explore = () => {
         )}
 
         {/* Results List */}
-        <div className="divide-y divide-[#E5E7EB]">
+        <div className="divide-y divide-[#E5E7EB] dark:divide-gray-700">
           {results.map((user, i) => (
             <div
               key={i}
-              className="flex items-center p-4 hover:bg-[#F9FAFB] transition cursor-pointer"
-              onClick={() => navigate(`/dashboard/user/${user.username}`)} // ✅ fixed route
+              className="flex items-center p-4 hover:bg-[#F9FAFB] dark:hover:bg-gray-700 transition cursor-pointer"
+              onClick={() => navigate(`/dashboard/user/${user.username}`)}
             >
               <img
                 src={user.profile_photo || "https://via.placeholder.com/100"}
                 alt={user.username}
-                className="w-12 h-12 rounded-full object-cover border border-[#E5E7EB] mr-4"
+                className="w-12 h-12 rounded-full object-cover border border-[#E5E7EB] dark:border-gray-600 mr-4"
               />
               <div>
-                <p className="font-semibold text-[#111827]">{user.username}</p>
-                <p className="text-sm text-[#6B7280] truncate max-w-xs">
+                <p className="font-semibold text-[#111827] dark:text-gray-200">{user.username}</p>
+                <p className="text-sm text-[#6B7280] dark:text-gray-400 truncate max-w-xs">
                   {user.description || "No bio provided"}
                 </p>
               </div>

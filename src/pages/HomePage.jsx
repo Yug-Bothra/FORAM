@@ -66,7 +66,10 @@ const HomePage = () => {
         {attachments.map((att, index) => {
           if (att.type === "video") {
             return (
-              <div key={index} className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden group">
+              <div
+                key={index}
+                className="relative bg-gradient-to-br from-gray-900 to-black rounded-2xl overflow-hidden group"
+              >
                 <video
                   src={att.url}
                   controls
@@ -117,16 +120,14 @@ const HomePage = () => {
     );
   };
 
-  // Update likes/comments counts in UI
   const updatePostCounts = (postId, newLikesCount, newCommentsCount) => {
-    console.log('Updating post counts:', { postId, newLikesCount, newCommentsCount });
     setPosts((prev) =>
       prev.map((post) =>
         post.id === postId
           ? {
               ...post,
-              likes_count: newLikesCount !== undefined ? newLikesCount : post.likes_count,
-              comments_count: newCommentsCount !== undefined ? newCommentsCount : post.comments_count,
+              likes_count: newLikesCount ?? post.likes_count,
+              comments_count: newCommentsCount ?? post.comments_count,
             }
           : post
       )
@@ -135,24 +136,22 @@ const HomePage = () => {
 
   if (loading)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAFA] via-[#F9FAFB] to-[#F3F4F6] relative overflow-hidden">
-        {/* Animated background elements */}
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#6C63FF]/5 rounded-full animate-pulse"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-[#5B55E3]/5 rounded-full animate-pulse delay-75"></div>
-          <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-[#6C63FF]/3 rounded-full animate-pulse delay-150"></div>
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500/5 rounded-full animate-pulse"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-indigo-500/5 rounded-full animate-pulse delay-75"></div>
+          <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-purple-500/20 rounded-full animate-pulse delay-150"></div>
         </div>
-        
         <div className="text-center z-10">
           <div className="relative mb-8">
-            <div className="animate-spin rounded-full h-20 w-20 border-4 border-[#E5E7EB] border-t-[#6C63FF] mx-auto shadow-lg"></div>
+            <div className="animate-spin rounded-full h-20 w-20 border-4 border-gray-200 border-t-purple-600 mx-auto shadow-lg"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-[#6C63FF] to-[#5B55E3] rounded-full animate-pulse shadow-xl"></div>
+              <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-indigo-500 rounded-full animate-pulse shadow-xl"></div>
             </div>
           </div>
           <div className="space-y-2">
-            <p className="text-[#111827] text-xl font-bold">Loading your feed</p>
-            <p className="text-[#6B7280] text-base">Discovering amazing content...</p>
+            <p className="text-gray-900 dark:text-white text-xl font-bold">Loading your feed</p>
+            <p className="text-gray-500 dark:text-gray-300 text-base">Discovering amazing content...</p>
           </div>
         </div>
       </div>
@@ -160,67 +159,62 @@ const HomePage = () => {
 
   if (!posts.length)
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#FAFAFA] via-[#F9FAFB] to-[#F3F4F6] relative overflow-hidden">
-        {/* Animated background elements */}
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-black dark:via-gray-900 dark:to-black relative overflow-hidden">
         <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-[#6C63FF]/5 rounded-full animate-bounce delay-100"></div>
-          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-[#5B55E3]/5 rounded-full animate-bounce delay-200"></div>
+          <div className="absolute top-1/4 left-1/4 w-32 h-32 bg-purple-500/5 rounded-full animate-bounce delay-100"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-indigo-500/5 rounded-full animate-bounce delay-200"></div>
         </div>
-        
         <div className="text-center max-w-md z-10">
           <div className="mb-6">
-            <div className="w-24 h-24 bg-gradient-to-br from-[#6C63FF] to-[#5B55E3] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
+            <div className="w-24 h-24 bg-gradient-to-br from-purple-600 to-indigo-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
               <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
               </svg>
             </div>
-            <h3 className="text-2xl font-bold text-[#111827] mb-3">No posts yet!</h3>
-            <p className="text-[#6B7280] mb-6">Be the first to share something amazing with the community.</p>
+            <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">No posts yet!</h3>
+            <p className="text-gray-500 dark:text-gray-300 mb-6">Be the first to share something amazing with the community.</p>
           </div>
           <button
             onClick={fetchPosts}
-            className="group relative px-8 py-4 bg-gradient-to-r from-[#6C63FF] to-[#5B55E3] text-white rounded-2xl hover:shadow-xl hover:shadow-[#6C63FF]/25 transition-all duration-300 font-bold text-lg overflow-hidden"
+            className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-indigo-500 text-white rounded-2xl hover:shadow-xl hover:shadow-purple-600/25 transition-all duration-300 font-bold text-lg overflow-hidden"
           >
             <span className="relative z-10 flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-              </svg>
               <span>Refresh Feed</span>
             </span>
-            <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
+            <div className="absolute inset-0 bg-white/20 dark:bg-white/10 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left"></div>
           </button>
         </div>
       </div>
     );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#FAFAFA] via-[#F9FAFB] to-[#F3F4F6] pb-6 relative">
+    <div className="min-h-screen pb-6 relative bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 dark:from-black dark:via-gray-900 dark:to-black">
       {/* Background decorative elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-[#6C63FF]/3 rounded-full blur-3xl"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-[#5B55E3]/3 rounded-full blur-3xl"></div>
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-500/20 dark:bg-purple-700/30 rounded-full blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-indigo-500/20 dark:bg-indigo-700/30 rounded-full blur-3xl"></div>
       </div>
 
-      {/* Enhanced Sticky Header */}
-      <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-[#E5E7EB]/50 mb-6 shadow-sm">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 bg-white/80 dark:bg-black/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-700 mb-6 shadow-sm">
         <div className="max-w-xl mx-auto px-6 py-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-[#6C63FF] to-[#5B55E3] rounded-2xl flex items-center justify-center shadow-lg">
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"></path>
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-[#111827] to-[#6B7280] bg-clip-text text-transparent">Feed</h1>
-                <p className="text-sm text-[#6B7280] font-medium">Discover what's happening</p>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-500 dark:from-white dark:to-gray-400 bg-clip-text text-transparent">Feed</h1>
+                <p className="text-sm text-gray-500 dark:text-gray-300 font-medium">Discover what's happening</p>
               </div>
             </div>
-            
+
             <button
               onClick={fetchPosts}
               disabled={loading}
-              className="group relative p-3 text-[#6B7280] hover:text-[#6C63FF] bg-white/50 hover:bg-white/80 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl border border-white/20"
+              className="group relative p-3 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 bg-white/50 dark:bg-black/50 hover:bg-white/80 dark:hover:bg-black/80 rounded-2xl transition-all duration-300 disabled:opacity-50 shadow-lg hover:shadow-xl border border-white/20 dark:border-gray-700"
             >
               <svg
                 className={`w-5 h-5 transition-transform duration-300 ${loading ? "animate-spin" : "group-hover:rotate-180"}`}
@@ -240,18 +234,15 @@ const HomePage = () => {
         </div>
       </div>
 
-      {/* Enhanced Posts */}
+      {/* Posts */}
       <div className="max-w-xl mx-auto px-4 space-y-6 relative z-10">
         {posts.map((post, index) => (
           <article
             key={post.id}
-            className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 overflow-hidden hover:shadow-2xl hover:shadow-[#6C63FF]/10 transition-all duration-500 hover:-translate-y-1"
-            style={{ 
-              animationDelay: `${index * 100}ms`,
-              animation: 'fadeInUp 0.6s ease-out forwards'
-            }}
+            className="group bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl rounded-3xl shadow-lg border border-white/20 dark:border-gray-700 overflow-hidden hover:shadow-2xl hover:shadow-purple-600/10 transition-all duration-500 hover:-translate-y-1"
+            style={{ animationDelay: `${index * 100}ms`, animation: 'fadeInUp 0.6s ease-out forwards' }}
           >
-            {/* Enhanced Header */}
+            {/* Header */}
             <div className="flex items-center justify-between p-6 relative">
               <div className="flex items-center space-x-4">
                 <div className="relative">
@@ -267,7 +258,7 @@ const HomePage = () => {
                     />
                   ) : null}
                   <div
-                    className="w-14 h-14 bg-gradient-to-br from-[#6C63FF] to-[#5B55E3] rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xl border-3 border-white group-hover:scale-105 transition-transform duration-300"
+                    className="w-14 h-14 bg-gradient-to-br from-purple-600 to-indigo-500 rounded-2xl flex items-center justify-center text-white font-bold text-xl shadow-xl border-3 border-white group-hover:scale-105 transition-transform duration-300"
                     style={{ display: post.profile_photo ? "none" : "flex" }}
                   >
                     {post.username ? post.username[0].toUpperCase() : "U"}
@@ -275,42 +266,34 @@ const HomePage = () => {
                   <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 border-2 border-white rounded-full"></div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-bold text-[#111827] text-lg">
-                    {post.username || "Unknown User"}
-                  </span>
+                  <span className="font-bold text-gray-900 dark:text-white text-lg">{post.username || "Unknown User"}</span>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm text-[#6B7280] font-medium">
-                      {formatTimeAgo(post.created_at)}
-                    </span>
-                    <div className="w-1 h-1 bg-[#6B7280] rounded-full"></div>
-                    <span className="text-xs text-[#6C63FF] font-bold bg-[#6C63FF]/10 px-2 py-1 rounded-full">
-                      PUBLIC
-                    </span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">{formatTimeAgo(post.created_at)}</span>
+                    <div className="w-1 h-1 bg-gray-500 dark:bg-gray-400 rounded-full"></div>
+                    <span className="text-xs text-purple-600 dark:text-purple-400 font-bold bg-purple-100 dark:bg-purple-800/30 px-2 py-1 rounded-full">PUBLIC</span>
                   </div>
                 </div>
               </div>
-              
-              <button className="p-2 text-[#6B7280] hover:text-[#6C63FF] hover:bg-[#6C63FF]/10 rounded-xl transition-all duration-300">
+
+              <button className="p-2 text-gray-500 dark:text-gray-300 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-800/30 rounded-xl transition-all duration-300">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
                 </svg>
               </button>
             </div>
 
-            {/* Enhanced Text */}
+            {/* Content */}
             {post.content && (
               <div className="px-6 pb-4">
-                <p className="text-[#111827] whitespace-pre-wrap leading-relaxed text-base">
-                  {post.content}
-                </p>
+                <p className="text-gray-900 dark:text-white whitespace-pre-wrap leading-relaxed text-base">{post.content}</p>
               </div>
             )}
 
-            {/* Enhanced Media */}
+            {/* Media */}
             <div className="px-6 pb-4">{renderMedia(post.attachments)}</div>
 
-            {/* Enhanced Stats */}
-            <div className="px-6 py-3 flex items-center justify-between text-sm text-[#6B7280] bg-[#F9FAFB]/50 border-t border-[#E5E7EB]/30">
+            {/* Stats */}
+            <div className="px-6 py-3 flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-6">
                 <div className="flex items-center space-x-2">
                   <div className="flex -space-x-1">
@@ -321,24 +304,18 @@ const HomePage = () => {
                       <span className="text-xs">👍</span>
                     </div>
                   </div>
-                  <span className="font-medium">
-                    {post.likes_count} {post.likes_count === 1 ? "like" : "likes"}
-                  </span>
+                  <span className="font-medium">{post.likes_count} {post.likes_count === 1 ? "like" : "likes"}</span>
                 </div>
-                <span className="font-medium">
-                  {post.comments_count}{" "}
-                  {post.comments_count === 1 ? "comment" : "comments"}
-                </span>
+                <span className="font-medium">{post.comments_count} {post.comments_count === 1 ? "comment" : "comments"}</span>
               </div>
-              
               <div className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-[#6C63FF] rounded-full animate-pulse"></div>
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
                 <span className="text-xs font-medium">Live</span>
               </div>
             </div>
 
-            {/* Enhanced Action Buttons */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-[#E5E7EB]/30">
+            {/* Actions */}
+            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700">
               <div className="flex items-center space-x-2 flex-1">
                 <Like
                   postId={post.id}
@@ -355,8 +332,8 @@ const HomePage = () => {
                   }
                   className={`group flex items-center space-x-3 px-6 py-3 rounded-2xl transition-all duration-300 flex-1 justify-center font-medium ${
                     openCommentsPostId === post.id
-                      ? "bg-[#6C63FF]/10 text-[#6C63FF] shadow-lg shadow-[#6C63FF]/20"
-                      : "text-[#6B7280] hover:bg-[#6C63FF]/5 hover:text-[#6C63FF]"
+                      ? "bg-purple-100 dark:bg-purple-800/30 text-purple-600 dark:text-purple-400 shadow-lg shadow-purple-200/20"
+                      : "text-gray-500 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400"
                   }`}
                 >
                   <svg
@@ -365,26 +342,21 @@ const HomePage = () => {
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
                   </svg>
                   <span>Comment</span>
                 </button>
                 <Share
                   imageUrl={post.attachments?.[0]?.url}
                   postId={post.id}
-                  className="group flex items-center space-x-3 text-[#6B7280] hover:bg-[#6C63FF]/5 hover:text-[#6C63FF] px-6 py-3 rounded-2xl transition-all duration-300 flex-1 justify-center font-medium"
+                  className="group flex items-center space-x-3 text-gray-500 dark:text-gray-300 hover:bg-purple-50 dark:hover:bg-purple-900/20 hover:text-purple-600 dark:hover:text-purple-400 px-6 py-3 rounded-2xl transition-all duration-300 flex-1 justify-center font-medium"
                 />
               </div>
             </div>
 
-            {/* Enhanced Comments */}
+            {/* Comments */}
             {openCommentsPostId === post.id && (
-              <div className="border-t border-[#E5E7EB]/30 bg-gradient-to-b from-[#F9FAFB]/50 to-white/50 backdrop-blur-sm">
+              <div className="border-t border-gray-200 dark:border-gray-700 bg-gray-100/50 dark:bg-gray-900/50 backdrop-blur-sm">
                 <div className="p-6">
                   <Comments
                     postId={post.id}

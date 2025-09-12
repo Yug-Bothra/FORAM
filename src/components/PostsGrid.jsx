@@ -17,7 +17,7 @@ const PostsGrid = ({ postList, openPostModal }) => {
         return (
           <div
             key={post.id}
-            className="relative aspect-square bg-black cursor-pointer group"
+            className="relative aspect-square bg-black dark:bg-gray-800 cursor-pointer group"
             onClick={() => openPostModal(post)}
           >
             {attachment ? (
@@ -37,14 +37,14 @@ const PostsGrid = ({ postList, openPostModal }) => {
                 />
               )
             ) : (
-              <div className="flex items-center justify-center text-white text-sm p-2 text-center">
+              <div className="flex items-center justify-center text-white dark:text-gray-200 text-sm p-2 text-center">
                 {post.content}
               </div>
             )}
 
             {/* Hover Overlay */}
-            <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <div className="flex space-x-6 text-white font-semibold text-sm">
+            <div className="absolute inset-0 bg-black/40 dark:bg-gray-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+              <div className="flex space-x-6 text-white dark:text-gray-200 font-semibold text-sm">
                 <div className="flex items-center space-x-1">
                   <span>❤</span>
                   <span>{post.likes_count || 0}</span>
@@ -58,7 +58,7 @@ const PostsGrid = ({ postList, openPostModal }) => {
 
             {/* Video Icon Overlay */}
             {isVideo && (
-              <div className="absolute top-2 right-2 text-white text-lg opacity-80">
+              <div className="absolute top-2 right-2 text-white dark:text-gray-200 text-lg opacity-80">
                 🎥
               </div>
             )}
@@ -69,8 +69,8 @@ const PostsGrid = ({ postList, openPostModal }) => {
   ) : (
     <div className="text-center py-16">
       <div className="text-4xl mb-4 opacity-60">📱</div>
-      <p className="text-[#111827] text-lg font-semibold mb-2">No posts yet</p>
-      <p className="text-[#6B7280] text-sm mb-4">
+      <p className="text-[#111827] dark:text-gray-200 text-lg font-semibold mb-2">No posts yet</p>
+      <p className="text-[#6B7280] dark:text-gray-400 text-sm mb-4">
         Share your first post to get started!
       </p>
     </div>

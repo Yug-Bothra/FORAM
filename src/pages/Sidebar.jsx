@@ -1,4 +1,3 @@
-// src/pages/Sidebar.jsx
 import React, { useState } from "react";
 import {
   Home,
@@ -7,7 +6,6 @@ import {
   Settings,
   LogOut,
   GraduationCap,
-  Bell,
   MessageCircle,
   PlusCircle,
   Users,
@@ -20,34 +18,30 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { signOut } = useClerk();
-
-  // Expand/collapse messages submenu
   const [showMessages, setShowMessages] = useState(false);
 
-  // Check if path is active
   const isActive = (path) => location.pathname.startsWith(path);
 
-  // Base styles
   const buttonBase =
     "group flex items-center space-x-3 p-3 rounded-xl w-full text-left transition-all duration-200";
-  const activeStyle = "bg-purple-100 text-purple-600 font-semibold shadow-md";
+  const activeStyle = "bg-purple-100 text-purple-600 font-semibold shadow-md dark:bg-purple-900/50 dark:text-purple-400";
   const inactiveStyle =
-    "text-gray-700 hover:text-purple-600 hover:bg-purple-50";
+    "text-gray-700 hover:text-purple-600 hover:bg-purple-50 dark:text-gray-300 dark:hover:text-purple-400 dark:hover:bg-purple-900/20";
 
   return (
     <aside
       className="
         fixed top-0 left-0 
         h-screen w-72 
-        bg-gradient-to-b from-white to-gray-50 
-        border-r border-gray-200 
+        bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800
+        border-r border-gray-200 dark:border-gray-700
         flex flex-col 
         shadow-lg
         z-50
       "
     >
       {/* Header */}
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-6 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center space-x-3 mb-2">
           <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-blue-500 rounded-xl flex items-center justify-center">
             <GraduationCap size={24} className="text-white" />
@@ -56,15 +50,14 @@ const Sidebar = () => {
             FORAM
           </h1>
         </div>
-        <p className="text-sm text-gray-500 font-medium">
+        <p className="text-sm text-gray-500 font-medium dark:text-gray-300">
           College Community Hub
         </p>
       </div>
 
-      {/* Links */}
+      {/* Navigation Links */}
       <SignedIn>
         <div className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {/* Home */}
           <button
             onClick={() => navigate("/dashboard/home")}
             className={`${buttonBase} ${
@@ -75,7 +68,6 @@ const Sidebar = () => {
             <span className="font-semibold">Home</span>
           </button>
 
-          {/* Explore */}
           <button
             onClick={() => navigate("/dashboard/explore")}
             className={`${buttonBase} ${
@@ -86,7 +78,6 @@ const Sidebar = () => {
             <span className="font-semibold">Explore</span>
           </button>
 
-          {/* Post */}
           <button
             onClick={() => navigate("/dashboard/post")}
             className={`${buttonBase} ${
@@ -97,7 +88,6 @@ const Sidebar = () => {
             <span className="font-semibold">Post</span>
           </button>
 
-          {/* Profile */}
           <button
             onClick={() => navigate("/dashboard/profile")}
             className={`${buttonBase} ${
@@ -108,7 +98,7 @@ const Sidebar = () => {
             <span className="font-semibold">Profile</span>
           </button>
 
-          {/* Settings */}
+          {/* Settings Link */}
           <button
             onClick={() => navigate("/dashboard/settings")}
             className={`${buttonBase} ${
@@ -119,7 +109,7 @@ const Sidebar = () => {
             <span className="font-semibold">Settings</span>
           </button>
 
-          {/* Messages (Collapsible) */}
+          {/* Messages Collapsible */}
           <div>
             <button
               onClick={() => setShowMessages(!showMessages)}
@@ -171,24 +161,13 @@ const Sidebar = () => {
               </div>
             )}
           </div>
-
-          {/* Notifications */}
-          <button
-            onClick={() => navigate("/dashboard/notifications")}
-            className={`${buttonBase} ${
-              isActive("/dashboard/notifications") ? activeStyle : inactiveStyle
-            }`}
-          >
-            <Bell size={20} />
-            <span className="font-semibold">Notifications</span>
-          </button>
         </div>
 
         {/* Sign Out */}
-        <div className="p-4 border-t border-gray-100 bg-gray-50">
+        <div className="p-4 border-t border-gray-100 bg-gray-50 dark:border-gray-700 dark:bg-gray-900">
           <button
             onClick={() => signOut(() => navigate("/clerk-login"))}
-            className="group flex items-center space-x-3 text-gray-600 hover:text-red-600 hover:bg-red-50 p-3 rounded-xl w-full text-left transition-all duration-200"
+            className="group flex items-center space-x-3 text-gray-600 hover:text-red-600 hover:bg-red-50 dark:text-gray-300 dark:hover:bg-red-900/30 p-3 rounded-xl w-full text-left transition-all duration-200"
           >
             <LogOut size={20} />
             <span className="font-semibold">Sign Out</span>

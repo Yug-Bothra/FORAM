@@ -1,3 +1,27 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Light Mode */
+body[data-theme="light"] {
+  background-color: #F9FAFB; /* Secondary light background */
+  color: #111827; /* Dark text */
+}
+
+/* Dark Mode */
+body[data-theme="dark"] {
+  background-color: #000000; /* Full black background */
+  color: #ffffff; /* White text */
+}
+
+button.primary {
+  @apply bg-purple-600 text-white rounded px-4 py-2 transition;
+}
+
+button.primary:hover {
+  @apply bg-purple-700;
+}
+
+.like-button {
+  @apply text-pink-500;
+}

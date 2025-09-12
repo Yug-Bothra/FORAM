@@ -4,23 +4,24 @@ import EnrollmentAuth from "./EnrollmentAuth";
 import ClerkLogin from "./ClerkLogin";
 import CompleteProfile from "./CompleteProfile";
 import Dashboard from "../pages/Dashboard";
-
+import { useContext } from "react";
+import { SettingsContext } from "./Settings";  // Import context
 
 export default function Profile() {
+  const { theme } = useContext(SettingsContext);
+
   return (
-    <Routes>
-      {/* Step 1: Enrollment check */}
-      <Route path="/" element={<EnrollmentAuth />} />
-
-      {/* Step 2: Clerk login/signup */}
-      <Route path="/clerk-login/*" element={<ClerkLogin />} />
-
-      {/* Step 3: Complete profile after signup */}
-      <Route path="/complete-profile" element={<CompleteProfile />} />
-
-      {/* Step 4: Show dashboard after login */}
-      <Route path="/dashboard/*" element={<Dashboard />} />
-
-    </Routes>
+    <div
+      className={`min-h-screen transition-colors duration-300 ${
+        theme === "dark" ? "bg-black text-white" : "bg-white text-black"
+      }`}
+    >
+      <Routes>
+        <Route path="/" element={<EnrollmentAuth />} />
+        <Route path="/clerk-login/*" element={<ClerkLogin />} />
+        <Route path="/complete-profile" element={<CompleteProfile />} />
+        <Route path="/dashboard/*" element={<Dashboard />} />
+      </Routes>
+    </div>
   );
 }

@@ -125,7 +125,7 @@ const ProfilePage = () => {
         onClick={onClose}
       >
         <div
-          className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex shadow-xl"
+          className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex shadow-xl"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Media Section */}
@@ -155,9 +155,9 @@ const ProfilePage = () => {
           )}
 
           {/* Content Section */}
-          <div className="w-80 flex flex-col bg-white">
+          <div className="w-80 flex flex-col bg-white dark:bg-gray-800">
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#E5E7EB]">
+            <div className="flex items-center justify-between p-4 border-b border-[#E5E7EB] dark:border-gray-700">
               <div className="flex items-center space-x-3">
                 {/* Profile Avatar */}
                 {profile.profile_photo ? (
@@ -180,17 +180,17 @@ const ProfilePage = () => {
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-[#111827] text-sm">
+                  <p className="font-semibold text-[#111827] dark:text-gray-200 text-sm">
                     {profile.username || "Unknown"}
                   </p>
-                  <p className="text-xs text-[#6B7280]">
+                  <p className="text-xs text-[#6B7280] dark:text-gray-400">
                     {formatDate(post.created_at)}
                   </p>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="w-8 h-8 rounded-full bg-[#F9FAFB] hover:bg-[#E5E7EB] text-[#6B7280] hover:text-[#111827] flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-[#F9FAFB] dark:bg-gray-700 hover:bg-[#E5E7EB] dark:hover:bg-gray-600 text-[#6B7280] dark:text-gray-300 hover:text-[#111827] flex items-center justify-center"
               >
                 ×
               </button>
@@ -198,12 +198,12 @@ const ProfilePage = () => {
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              <p className="text-[#111827] leading-relaxed text-sm">
+              <p className="text-[#111827] dark:text-gray-200 leading-relaxed text-sm">
                 {post.content}
               </p>
 
               {/* Action Buttons */}
-              <div className="flex items-center justify-between py-3 border-t border-[#E5E7EB]">
+              <div className="flex items-center justify-between py-3 border-t border-[#E5E7EB] dark:border-gray-700">
                 <div className="flex space-x-4">
                   <Like postId={post.id} initialCount={post.likes_count} />
                   <button
@@ -212,7 +212,7 @@ const ProfilePage = () => {
                         openCommentsPostId === post.id ? null : post.id
                       )
                     }
-                    className="flex items-center space-x-1 text-[#6B7280] hover:text-[#6C63FF]"
+                    className="flex items-center space-x-1 text-[#6B7280] dark:text-gray-400 hover:text-[#6C63FF]"
                   >
                     <span className="text-xl">💬</span>
                     {post.comments_count > 0 && <span>{post.comments_count}</span>}
@@ -236,19 +236,19 @@ const ProfilePage = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F9FAFB] flex justify-center items-center">
+      <div className="min-h-screen bg-[#F9FAFB] dark:bg-gray-900 flex justify-center items-center">
         <div className="text-center">
           <div className="relative mb-4">
-            <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#E5E7EB] mx-auto"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#E5E7EB] dark:border-gray-700 mx-auto"></div>
             <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#6C63FF] border-t-transparent absolute top-0 left-1/2 transform -translate-x-1/2"></div>
             <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
               <div className="w-4 h-4 bg-[#6C63FF] rounded-full animate-bounce"></div>
             </div>
           </div>
-          <p className="text-[#111827] text-lg font-semibold mb-1">
+          <p className="text-[#111827] dark:text-gray-200 text-lg font-semibold mb-1">
             Loading your profile...
           </p>
-          <p className="text-[#6B7280] text-sm">Getting everything ready</p>
+          <p className="text-[#6B7280] dark:text-gray-400 text-sm">Getting everything ready</p>
         </div>
       </div>
     );
@@ -256,13 +256,13 @@ const ProfilePage = () => {
 
   if (!profile) {
     return (
-      <div className="min-h-screen bg-[#F9FAFB] flex justify-center items-center">
-        <div className="text-center bg-white rounded-xl p-8 shadow-lg border border-[#E5E7EB] max-w-sm">
+      <div className="min-h-screen bg-[#F9FAFB] dark:bg-gray-900 flex justify-center items-center">
+        <div className="text-center bg-white dark:bg-gray-800 rounded-xl p-8 shadow-lg border border-[#E5E7EB] dark:border-gray-700 max-w-sm">
           <div className="text-4xl mb-4">😔</div>
-          <p className="text-[#FF6584] text-lg font-semibold mb-2">
+          <p className="text-[#FF6584] dark:text-red-400 text-lg font-semibold mb-2">
             Profile not found
           </p>
-          <p className="text-[#6B7280] text-sm">
+          <p className="text-[#6B7280] dark:text-gray-400 text-sm">
             We couldn't locate your profile information
           </p>
         </div>
@@ -271,7 +271,7 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-[#F9FAFB] dark:bg-gray-900">
       <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Profile Header */}
         <ProfileHeader
@@ -283,14 +283,14 @@ const ProfilePage = () => {
         />
 
         {/* Navigation Tabs */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-lg shadow-lg border border-[#E5E7EB] mb-6">
+        <div className="bg-white/90 dark:bg-gray-800 backdrop-blur-sm rounded-lg shadow-lg border border-[#E5E7EB] dark:border-gray-700 mb-6">
           <div className="flex justify-center p-2">
-            <div className="flex space-x-2 bg-[#F9FAFB] rounded-lg p-2">
+            <div className="flex space-x-2 bg-[#F9FAFB] dark:bg-gray-700 rounded-lg p-2">
               <button
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-300 font-medium text-sm ${
                   activeTab === "public"
                     ? "bg-[#6C63FF] text-white shadow-md scale-105"
-                    : "text-[#6B7280] hover:text-[#6C63FF] hover:bg-white hover:scale-105"
+                    : "text-[#6B7280] dark:text-gray-400 hover:text-[#6C63FF] hover:bg-white dark:hover:bg-gray-700 hover:scale-105"
                 }`}
                 onClick={() => setActiveTab("public")}
               >
@@ -310,7 +310,7 @@ const ProfilePage = () => {
                 className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-300 font-medium text-sm ${
                   activeTab === "private"
                     ? "bg-[#FF6584] text-white shadow-md scale-105"
-                    : "text-[#6B7280] hover:text-[#FF6584] hover:bg-white hover:scale-105"
+                    : "text-[#6B7280] dark:text-gray-400 hover:text-[#FF6584] hover:bg-white dark:hover:bg-gray-700 hover:scale-105"
                 }`}
                 onClick={() => setActiveTab("private")}
               >
@@ -331,7 +331,7 @@ const ProfilePage = () => {
         </div>
 
         {/* Posts Grid */}
-        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-[#E5E7EB]">
+        <div className="bg-white/90 dark:bg-gray-800 backdrop-blur-sm rounded-xl shadow-lg p-6 border border-[#E5E7EB] dark:border-gray-700">
           <PostsGrid
             postList={activeTab === "public" ? posts.public : posts.private}
             activeTab={activeTab}
