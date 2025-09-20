@@ -209,37 +209,18 @@ For technical issues or feature requests related to this academic project, pleas
 
 ---
 
+
+
 ## 📸 Application Screenshots
 
-### Authentication Flow
-
-| Login Screen | Registration | Profile Setup |
-|:---:|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/7e8859e9-0528-4d51-b259-d4c90aec5e3f" alt="Login Screen" width="600"/> | <img src="https://github.com/user-attachments/assets/14c4a441-1285-493d-b1b8-e9cd1a1f1c31" alt="Registration" width="600"/> | <img src="https://github.com/user-attachments/assets/d233429c-187b-420f-8d8b-7db596fb5f03" alt="Profile Setup" width="600"/> |
-
-### Main Application Interface
-
-| Dashboard | Messaging | Profile |
-|:---:|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/fd71f3a9-f142-4851-b66c-a556eccd5b28" alt="Dashboard" width="600"/> | <img src="https://github.com/user-attachments/assets/f8c8b356-132a-451f-96d2-fb09c48f5fd5" alt="Messaging" width="600"/> | <img src="https://github.com/user-attachments/assets/2f7c44d7-11fd-4208-81cc-22d53cef58e1" alt="Profile" width="600"/> |
-
-### Community Features
-
-| Community View | Group Chat | Media Sharing |
-|:---:|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/bc84e939-c99d-408d-a4bd-8b4556adb306" alt="Community View" width="600"/> | <img src="https://github.com/user-attachments/assets/6ffcd6c7-6c1f-4251-89a9-e2c763b671ef" alt="Group Chat" width="600"/> | <img src="https://github.com/user-attachments/assets/4d4b6d45-abd5-458b-8bf9-3633a09ed9f6" alt="Media Sharing" width="600"/> |
-
-### Database Architecture
-
-| Database Schema | User Management | Community Structure |
-|:---:|:---:|:---:|
-| <img src="https://github.com/user-attachments/assets/27830949-782c-4026-b45a-d21f4d968452" alt="Database Schema" width="600"/> | <img src="https://github.com/user-attachments/assets/3fa96c06-e4f6-489c-bb19-3bc3b18c4fd8" alt="User Management" width="600"/> | <img src="https://github.com/user-attachments/assets/6c4c701e-d5b3-425c-a3b9-a7bd69f44424" alt="Community Structure" width="600"/> |
+| ![](https://github.com/user-attachments/assets/7e8859e9-0528-4d51-b259-d4c90aec5e3f) | ![](https://github.com/user-attachments/assets/14c4a441-1285-493d-b1b8-e9cd1a1f1c31) | ![](https://github.com/user-attachments/assets/d233429c-187b-420f-8d8b-7db596fb5f03) |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/fd71f3a9-f142-4851-b66c-a556eccd5b28) | ![](https://github.com/user-attachments/assets/f8c8b356-132a-451f-96d2-fb09c48f5fd5) | ![](https://github.com/user-attachments/assets/2f7c44d7-11fd-4208-81cc-22d53cef58e1) |
+| ![](https://github.com/user-attachments/assets/bc84e939-c99d-408d-a4bd-8b4556adb306) | ![](https://github.com/user-attachments/assets/6ffcd6c7-6c1f-4251-89a9-e2c763b671ef) | ![](https://github.com/user-attachments/assets/4d4b6d45-abd5-458b-8bf9-3633a09ed9f6) |
+| ![](https://github.com/user-attachments/assets/27830949-782c-4026-b45a-d21f4d968452) | ![](https://github.com/user-attachments/assets/3fa96c06-e4f6-489c-bb19-3bc3b18c4fd8) | ![](https://github.com/user-attachments/assets/6c4c701e-d5b3-425c-a3b9-a7bd69f44424) |
 
 ---
 
-**FORAM** - Connecting College Communities, One Message at a Time! 🎓✨
-
----
 
 <div align="center">
   <h2>🌟 Experience FORAM Live</h2>
