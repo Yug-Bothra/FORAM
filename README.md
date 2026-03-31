@@ -9,9 +9,9 @@
 🚀 **[Visit Live Application](https://foram.vercel.app/)**
 
 DEMO LOGIN
-### 🎓 **Student Panel**
+### 🎓 **Student Id**
 * **Username / Roll No:** `22100BTAIMLM11277`
-
+### **Login**
 * **email: `yugbothra@gmail.com`
 * **passwoed: `Yugyug@123`
   
