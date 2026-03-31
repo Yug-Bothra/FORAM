@@ -12,7 +12,8 @@ DEMO LOGIN
 ### 🎓 **Student Panel**
 * **Username / Roll No:** `22100BTAIMLM11277`
 
-email: yugbothra@gmail.com
+* **email: `yugbothra@gmail.com`
+* **passwoed: `Yugyug@123`
   
 
 ## 🎯 Overview
