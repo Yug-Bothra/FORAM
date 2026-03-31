@@ -8,6 +8,13 @@
 
 🚀 **[Visit Live Application](https://foram.vercel.app/)**
 
+DEMO LOGIN
+### 🎓 **Student Panel**
+* **Username / Roll No:** `22100BTAIMLM11277`
+
+email: yugbothra@gmail.com
+  
+
 ## 🎯 Overview
 
 FORAM serves as the central hub for college students to:
